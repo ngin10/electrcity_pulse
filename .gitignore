@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Consumer output
+data/
+
+# Cloud credentials
+*-key.json
+secrets/
