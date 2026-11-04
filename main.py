@@ -35,7 +35,7 @@ def run_once(settings, session, producer, stop_event):
             log.info('Stop requested, ending run before %s', window_start)
             return
         records = fetch_data(session, settings.api_url, window_start, window_end)
-        publish_to_kafka(producer, settings.topic, settings.dlq_topic, records, window_start, window_end)
+        publish_to_kafka(producer, settings.topic, records, window_start, window_end)
 
         # Only advance after Kafka has acknowledged everything; never move it backwards on re-fetches
         checkpoint = max(window_end, checkpoint) if checkpoint else window_end

@@ -12,7 +12,6 @@ from config import load_settings
 from main import compute_range
 from sink import PublishError, event_key, publish_to_kafka
 from source import FetchError, date_windows, fetch_data
-from validation import validate_record
 
 GOOD = {
     'dataset': 'FUELHH', 'publishTime': '2026-10-21T23:00:00Z', 'startTime': '2026-10-21T22:30:00Z',
@@ -102,26 +101,6 @@ def test_fetch_data_rejects_non_json():
         fetch_data(FakeSession(FakeResponse(200, '<html>')), 'http://x', date(2026, 10, 1), date(2026, 10, 1))
 
 
-# --- validation -------------------------------------------------------------
-
-def test_valid_record_passes():
-    assert validate_record(GOOD) == []
-    assert validate_record({**GOOD, 'generation': -500}) == []
-
-
-@pytest.mark.parametrize('field,value', [
-    ('settlementDate', '21/10/2026'),
-    ('settlementPeriod', 0),
-    ('settlementPeriod', 51),
-    ('settlementPeriod', True),
-    ('fuelType', ''),
-    ('generation', None),
-    ('generation', '100'),
-])
-def test_invalid_fields_rejected(field, value):
-    assert validate_record({**GOOD, field: value})
-
-
 # --- checkpoint -------------------------------------------------------------
 
 def test_checkpoint_roundtrip(tmp_path):
@@ -172,29 +151,41 @@ class FakeProducer:
 W = (date(2026, 10, 21), date(2026, 10, 21))
 
 
-def test_publish_routes_valid_and_invalid():
+def test_publish_sends_every_record_raw():
     producer = FakeProducer()
-    bad = {**GOOD, 'fuelType': None}
-    published, invalid = publish_to_kafka(producer, 't', 'dlq', [GOOD, bad], *W)
-    assert (published, invalid) == (1, 1)
+    bad = {**GOOD, 'settlementPeriod': 99, 'generation': 'n/a'}
+    assert publish_to_kafka(producer, 't', [GOOD, bad, 'not a record'], *W) == 3
+    assert [topic for topic, _, _ in producer.sent] == ['t', 't', 't']
+
     topic, key, value = producer.sent[0]
-    assert topic == 't' and key == event_key(GOOD)
+    assert key == event_key(GOOD)
     assert value['payload'] == GOOD and value['schema_version'] == 1
     assert value['fetch_window'] == {'from': '2026-10-21', 'to': '2026-10-21'}
-    assert producer.sent[1][0] == 'dlq' and producer.sent[1][2]['raw'] == bad
+    # Published untouched, for the lakehouse to judge
+    assert producer.sent[1][2]['payload'] == bad
+    assert producer.sent[2][2]['payload'] == 'not a record'
+
+
+def test_records_missing_key_fields_get_their_own_keys():
+    # Both lack a fuel type: keyed by identity they would collide, and compaction would keep only one
+    first = {**GOOD, 'fuelType': None}
+    second = {**GOOD, 'fuelType': None, 'generation': 1}
+    assert event_key(first) != event_key(second)
+    assert event_key(first) == event_key(dict(first))
+    assert event_key('not a record') != event_key('also not a record')
 
 
 def test_publish_retries_on_buffer_error():
     producer = FakeProducer(buffer_errors=2)
-    publish_to_kafka(producer, 't', 'dlq', [GOOD], *W)
+    publish_to_kafka(producer, 't', [GOOD], *W)
     assert len(producer.sent) == 1
 
 
 def test_publish_raises_on_delivery_failure():
     with pytest.raises(PublishError, match='failed delivery'):
-        publish_to_kafka(FakeProducer(fail_keys={event_key(GOOD)}), 't', 'dlq', [GOOD], *W)
+        publish_to_kafka(FakeProducer(fail_keys={event_key(GOOD)}), 't', [GOOD], *W)
 
 
 def test_publish_raises_when_flush_leaves_messages():
     with pytest.raises(PublishError, match='undelivered'):
-        publish_to_kafka(FakeProducer(leftover=3), 't', 'dlq', [GOOD], *W)
+        publish_to_kafka(FakeProducer(leftover=3), 't', [GOOD], *W)

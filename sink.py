@@ -2,11 +2,12 @@ import hashlib
 import json
 import logging
 
-from validation import build_dead_letter, build_envelope, validate_record
+from envelope import build_envelope
 
 log = logging.getLogger(__name__)
 
 FLUSH_TIMEOUT_SECONDS = 60
+KEY_FIELDS = ('settlementDate', 'settlementPeriod', 'fuelType')
 
 
 class PublishError(Exception):
@@ -45,9 +46,6 @@ def ensure_topics(admin, settings):
         NewTopic(settings.topic, num_partitions=settings.topic_partitions,
                  replication_factor=settings.topic_replication,
                  config={'cleanup.policy': 'compact', 'min.compaction.lag.ms': '3600000'}),
-        NewTopic(settings.dlq_topic, num_partitions=1,
-                 replication_factor=settings.topic_replication,
-                 config={'cleanup.policy': 'delete', 'retention.ms': str(14 * 24 * 3600 * 1000)}),
     ]
     for name, future in admin.create_topics(topics).items():
         try:
@@ -60,13 +58,16 @@ def ensure_topics(admin, settings):
 
 
 def event_key(record):
-    key_fields = {
-        'dataset': record.get('dataset', 'FUELHH'),
-        'settlementDate': record.get('settlementDate'),
-        'settlementPeriod': record.get('settlementPeriod'),
-        'fuelType': record.get('fuelType'),
-    }
-    raw = json.dumps(key_fields, sort_keys=True, separators=(',', ':'))
+    """Kafka key: the record's identity, so compaction keeps only the latest revision of each record.
+
+    A record missing part of that identity is keyed by its whole content instead; otherwise unrelated broken
+    records would share a key and compaction would delete all but one before the lakehouse could reject them.
+    """
+    if not isinstance(record, dict) or any(record.get(field) is None for field in KEY_FIELDS):
+        identity = record
+    else:
+        identity = {'dataset': record.get('dataset', 'FUELHH'), **{field: record[field] for field in KEY_FIELDS}}
+    raw = json.dumps(identity, sort_keys=True, separators=(',', ':'), default=str)
     return hashlib.sha256(raw.encode('utf-8')).hexdigest()
 
 
@@ -94,25 +95,17 @@ def _produce(producer, topic, key, value, callback):
     producer.poll(0)
 
 
-def publish_to_kafka(producer, topic, dlq_topic, records, window_start, window_end):
-    """Publish records and block until every message is acknowledged; raise if any were lost."""
+def publish_to_kafka(producer, topic, records, window_start, window_end):
+    """Publish every record raw and block until each is acknowledged; returns the count, raises if any were lost.
+
+    Nothing is filtered here: the lakehouse runs the data-quality checks, so bad records still reach it.
+    """
     tracker = DeliveryTracker()
-    published = invalid = 0
 
     for record in records:
-        errors = validate_record(record)
-        if errors:
-            invalid += 1
-            log.warning('Invalid record routed to DLQ: %s', errors)
-            value = build_dead_letter(record, errors, window_start, window_end)
-            key = None
-            target = dlq_topic
-        else:
-            published += 1
-            value = build_envelope(record, window_start, window_end)
-            key = event_key(record)
-            target = topic
-        _produce(producer, target, key, json.dumps(value, separators=(',', ':')).encode('utf-8'), tracker)
+        value = build_envelope(record, window_start, window_end)
+        _produce(producer, topic, event_key(record), json.dumps(value, separators=(',', ':')).encode('utf-8'),
+                 tracker)
 
     remaining = producer.flush(FLUSH_TIMEOUT_SECONDS)
     if remaining > 0:
@@ -120,6 +113,6 @@ def publish_to_kafka(producer, topic, dlq_topic, records, window_start, window_e
     if tracker.failed > 0:
         raise PublishError(f'{tracker.failed} messages failed delivery')
 
-    log.info('Window %s..%s: %d published, %d to DLQ, %d acknowledged',
-             window_start, window_end, published, invalid, tracker.delivered)
-    return published, invalid
+    log.info('Window %s..%s: %d published, %d acknowledged',
+             window_start, window_end, len(records), tracker.delivered)
+    return len(records)

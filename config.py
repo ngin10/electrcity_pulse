@@ -13,7 +13,6 @@ class Settings:
     api_url: str
     kafka_bootstrap: str
     topic: str
-    dlq_topic: str
     topic_partitions: int
     topic_replication: int
     checkpoint_path: str
@@ -36,7 +35,6 @@ def load_settings():
         api_url=_env('API_URL', 'https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH'),
         kafka_bootstrap=_env('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
         topic=_env('KAFKA_TOPIC', 'elexon.fuelhh'),
-        dlq_topic=_env('KAFKA_DLQ_TOPIC', 'elexon.fuelhh.dlq'),
         topic_partitions=int(_env('KAFKA_TOPIC_PARTITIONS', 3)),
         topic_replication=int(_env('KAFKA_TOPIC_REPLICATION', 1)),
         checkpoint_path=_env('CHECKPOINT_PATH', 'state/checkpoint.json'),
