@@ -80,8 +80,9 @@ FUELHH = SilverSource(
         **START_RULE,
         # New interconnectors appear every few years: keep the row (it is real supply) and flag it
         'unknown_fuel_type': f'fuel_type NOT IN ({sql_list(KNOWN_FUEL_TYPES)})',
-        # Interconnectors go negative when GB exports; anything else negative is unusual
-        'negative_generation': "generation_mw < 0 AND fuel_type NOT LIKE 'INT%'",
+        # Negative is normal for interconnectors (GB exporting) and pumped storage (PS: pumping water uphill,
+        # 30,000 such periods in three years); for anything else it is unusual
+        'negative_generation': "generation_mw < 0 AND fuel_type NOT LIKE 'INT%' AND fuel_type <> 'PS'",
         'future_settlement_date': 'settlement_date > date_add(current_date(), 2)',
     },
     keys=('settlement_date', 'settlement_period', 'fuel_type'),
@@ -161,6 +162,10 @@ DEMAND_FORECAST = _source(
 _DGWS_AGWS_FIELDS = ('dataset', 'documentId', 'documentRevisionNumber', 'publishTime', 'businessType',
                      'psrType', 'quantity', 'startTime', 'settlementDate', 'settlementPeriod')
 PSR_TYPES = ('Solar', 'Wind Offshore', 'Wind Onshore')
+# Wind farms draw a little power for their own equipment when idle, so AGWS has real values down to about
+# -40 MW: keep small negatives (flagged); reject only what can't be a reading
+WIND_SOLAR_RANGE = {'quantity_implausible': outside('quantity_mw', -500, 50000)}
+NEGATIVE_QUANTITY = {'negative_quantity': 'quantity_mw < 0'}
 
 
 def _wind_solar_fields():
@@ -186,8 +191,8 @@ WIND_SOLAR_FORECAST = _source(
     fields={**_wind_solar_fields(), 'process_type': Field('rec.processType')},
     required=('document_id', 'publish_time', 'process_type', 'psr_type', 'quantity_mw', 'settlement_date',
               'settlement_period'),
-    hard_rules={**PERIOD_RULE, 'quantity_implausible': outside('quantity_mw', 0, 50000)},
-    soft_rules={**START_RULE,
+    hard_rules={**PERIOD_RULE, **WIND_SOLAR_RANGE},
+    soft_rules={**START_RULE, **NEGATIVE_QUANTITY,
                 'unknown_process_type': "process_type NOT IN ('Day ahead', 'Intraday process', 'Intraday total')",
                 'unknown_psr_type': f'psr_type NOT IN ({sql_list(PSR_TYPES)})'},
     keys=('document_id', 'process_type', 'psr_type', 'settlement_date', 'settlement_period'),
@@ -206,8 +211,8 @@ WIND_SOLAR_ACTUAL = _source(
     record_fields=_DGWS_AGWS_FIELDS,
     fields=_wind_solar_fields(),
     required=('psr_type', 'quantity_mw', 'settlement_date', 'settlement_period', 'publish_time'),
-    hard_rules={**PERIOD_RULE, 'quantity_implausible': outside('quantity_mw', 0, 50000)},
-    soft_rules={**START_RULE, 'unknown_psr_type': f'psr_type NOT IN ({sql_list(PSR_TYPES)})'},
+    hard_rules={**PERIOD_RULE, **WIND_SOLAR_RANGE},
+    soft_rules={**START_RULE, **NEGATIVE_QUANTITY, 'unknown_psr_type': f'psr_type NOT IN ({sql_list(PSR_TYPES)})'},
     keys=('psr_type', 'settlement_date', 'settlement_period'),
     sequence=('publish_time', 'document_revision_number', *BATCH_SEQUENCE),
     cluster_by=('settlement_date',),
@@ -364,8 +369,10 @@ CARBON_INTENSITY = _source(
         'actual_gco2_kwh': Field("get_json_object(rec.intensity, '$.actual')", 'INT'),
         'intensity_index': Field("lower(get_json_object(rec.intensity, '$.index'))"),
     },
-    required=('period_start', 'period_end', 'forecast_gco2_kwh'),
+    required=('period_start', 'period_end'),
     hard_rules={
+        # Some half-hours have only an actual or only a forecast; either is usable, neither is not
+        'no_intensity_value': 'record_keys IS NOT NULL AND forecast_gco2_kwh IS NULL AND actual_gco2_kwh IS NULL',
         'period_not_30_min': 'period_end <> period_start + INTERVAL 30 MINUTES',
         'intensity_implausible': (f"{outside('forecast_gco2_kwh', 0, 1000)} OR "
                                   f"{outside('actual_gco2_kwh', 0, 1000)}"),
@@ -373,6 +380,7 @@ CARBON_INTENSITY = _source(
     soft_rules={
         # A NULL with a meaning: the latest half-hours are not measured yet, and a later fetch fills them in
         'actual_not_yet_published': 'actual_gco2_kwh IS NULL',
+        'forecast_missing': 'forecast_gco2_kwh IS NULL',
         'unknown_index': "intensity_index NOT IN ('very low', 'low', 'moderate', 'high', 'very high')",
     },
     keys=('period_start',),

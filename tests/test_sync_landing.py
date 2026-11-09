@@ -61,7 +61,8 @@ def test_uploads_only_missing_files_oldest_date_first(tmp_path):
 
     # The file already there and the non-Parquet file are skipped
     assert uploaded == ['pv_live/ingest_date=2026-11-06/part-c.parquet', 'fuelhh/ingest_date=2026-11-07/part-b.parquet']
-    assert files.uploads == [f'{VOLUME}/{p}' for p in uploaded]
+    # Uploads run in parallel, so they finish in any order
+    assert sorted(files.uploads) == sorted(f'{VOLUME}/{p}' for p in uploaded)
     # A second run finds nothing to do
     assert sync_landing.sync(client, tmp_path, VOLUME) == []
 

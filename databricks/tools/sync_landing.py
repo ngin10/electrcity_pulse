@@ -19,6 +19,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 
 # The ingestion code's default LANDING_PATH: landing locally costs nothing
@@ -68,20 +69,29 @@ def files_to_upload(local, remote):
     return sorted(local - remote, key=lambda path: (path.split('/')[1:2], path))
 
 
-def sync(client, mirror, volume, dry_run=False):
+def sync(client, mirror, volume, dry_run=False, workers=8):
     """Upload every mirrored file missing from the volume; returns the paths uploaded (or that would be)."""
     missing = files_to_upload(local_files(mirror), volume_files(client, volume))
-    for count, relative in enumerate(missing, 1):
-        target = f'{volume}/{relative}'
-        if dry_run:
-            print(f'would upload {target}')
-            continue
-        client.files.create_directory(str(PurePosixPath(target).parent))
+    if dry_run:
+        for relative in missing:
+            print(f'would upload {volume}/{relative}')
+        return missing
+
+    # Each folder once, before any upload into it
+    for folder in sorted({str(PurePosixPath(f'{volume}/{relative}').parent) for relative in missing}):
+        client.files.create_directory(folder)
+
+    def upload(relative):
         with open(Path(mirror) / relative, 'rb') as contents:
             # overwrite=False: if the file somehow exists already, fail rather than replace landed data
-            client.files.upload(target, contents, overwrite=False)
-        if count % 100 == 0 or count == len(missing):
-            print(f'uploaded {count}/{len(missing)}')
+            client.files.upload(f'{volume}/{relative}', contents, overwrite=False)
+
+    # Uploads mostly wait on the network, so several at once are much faster. Each file is complete or absent,
+    # so stopping midway is safe: the next run uploads only what's still missing
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for count, _ in enumerate(pool.map(upload, missing), 1):
+            if count % 100 == 0 or count == len(missing):
+                print(f'uploaded {count}/{len(missing)}', flush=True)
     return missing
 
 
@@ -93,6 +103,7 @@ def main(argv=None):
     parser.add_argument('--volume', default=DEFAULT_VOLUME, help='the volume bronze reads')
     parser.add_argument('--profile', help='Databricks CLI profile (default: the default profile)')
     parser.add_argument('--dry-run', action='store_true', help='list what would be uploaded, upload nothing')
+    parser.add_argument('--workers', type=int, default=8, help='uploads at a time')
     args = parser.parse_args(argv)
 
     if args.source.startswith('gs://'):
@@ -105,7 +116,7 @@ def main(argv=None):
 
     from databricks.sdk import WorkspaceClient
     client = WorkspaceClient(profile=args.profile)
-    uploaded = sync(client, local_root, args.volume.rstrip('/'), dry_run=args.dry_run)
+    uploaded = sync(client, local_root, args.volume.rstrip('/'), dry_run=args.dry_run, workers=args.workers)
     print(f'{len(uploaded)} new file(s) {"to upload" if args.dry_run else "uploaded"} to {args.volume}')
 
 

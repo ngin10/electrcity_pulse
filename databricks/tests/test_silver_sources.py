@@ -206,3 +206,32 @@ def test_every_source_has_a_unique_table_and_final_columns_cover_its_keys():
         assert set(source.keys) <= set(columns), source.table
         assert set(source.sequence) <= set(columns), source.table
         assert set(source.cluster_by) <= set(columns), source.table
+
+
+# --- Cases found in the real backfill (November 2026 first run) ----------------------------------------------
+
+def test_pumped_storage_pumping_is_normal(spark):
+    # 30,113 FUELHH periods have PS negative: the station is pumping water uphill
+    pumping = with_(startTime='2026-10-25T23:00:00Z', fuelType='PS', generation=-2480)
+    oddity = with_(startTime='2026-10-25T23:00:00Z', fuelType='CCGT', generation=-5)
+    assert fuelhh_reasons(spark, envelope(pumping), envelope(oddity)) == [([], []), ([], ['negative_generation'])]
+
+
+def test_idle_wind_farms_drawing_power_are_kept(spark):
+    body = fixture_json('elexon_wind_solar_actual')
+    body['data'][0]['quantity'] = -38.506       # seen on 2024-05-10 for Wind Offshore
+    body['data'][1]['quantity'] = -5000.0       # not a reading
+    result = checked(spark, sources.WIND_SOLAR_ACTUAL, batch_bronze(spark, json.dumps(body))).orderBy('record_index')
+    [(kept_reject, kept_warn), (bad_reject, _), *_] = reasons_of(result)
+    assert kept_reject == [] and kept_warn == ['negative_quantity']
+    assert bad_reject == ['quantity_implausible']
+
+
+def test_carbon_intensity_needs_only_one_of_forecast_and_actual(spark):
+    body = fixture_json('carbon_intensity')
+    del body['data'][0]['intensity']['forecast']     # seen for January 2025: actual only
+    body['data'][1]['intensity'] = {'index': 'moderate'}
+    result = checked(spark, sources.CARBON_INTENSITY, batch_bronze(spark, json.dumps(body))).orderBy('record_index')
+    [(actual_only, warnings), (neither, _), *_] = reasons_of(result)
+    assert actual_only == [] and warnings == ['forecast_missing']
+    assert neither == ['no_intensity_value']
