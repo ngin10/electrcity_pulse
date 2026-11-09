@@ -1,0 +1,63 @@
+{
+ "help": "https://api.neso.energy/api/3/action/help_show?name=datastore_search_sql",
+ "success": true,
+ "result": {
+  "records": [
+   {
+    "IFA_FLOW": -827,
+    "TSD": 26974,
+    "VIKING_FLOW": 1426,
+    "GREENLINK_FLOW": -494,
+    "FORECAST_ACTUAL_INDICATOR": "A",
+    "IFA2_FLOW": -518,
+    "EMBEDDED_WIND_GENERATION": 1536,
+    "ND": 22992,
+    "MOYLE_FLOW": -278,
+    "NEMO_FLOW": -703,
+    "ELECLINK_FLOW": -668,
+    "PUMP_STORAGE_PUMPING": 6,
+    "EMBEDDED_WIND_CAPACITY": 6417,
+    "SETTLEMENT_DATE": "2026-10-01",
+    "ENGLAND_WALES_DEMAND": 21459,
+    "EMBEDDED_SOLAR_CAPACITY": 23963,
+    "SCOTTISH_TRANSFER": 3446,
+    "NON_BM_STOR": 0,
+    "_full_text": "'-01':3 '-10':2 '-278':19 '-494':25 '-518':17 '-668':23 '-703':21 '-827':16 '0':11,13,20 '1':4 '1401':22 '1426':24 '1536':9 '2026':1 '21459':8 '22992':5 '23963':12 '26974':7 '320':18 '3446':15 '6':14 '6417':10",
+    "SETTLEMENT_PERIOD": 1,
+    "EAST_WEST_FLOW": 0,
+    "NSL_FLOW": 1401,
+    "BRITNED_FLOW": 320,
+    "_id": 13103,
+    "EMBEDDED_SOLAR_GENERATION": 0
+   },
+   {
+    "IFA_FLOW": -817,
+    "TSD": 26691,
+    "VIKING_FLOW": 1426,
+    "GREENLINK_FLOW": -514,
+    "FORECAST_ACTUAL_INDICATOR": "A",
+    "IFA2_FLOW": -500,
+    "EMBEDDED_WIND_GENERATION": 1527,
+    "ND": 22754,
+    "MOYLE_FLOW": -258,
+    "NEMO_FLOW": -702,
+    "ELECLINK_FLOW": -654,
+    "PUMP_STORAGE_PUMPING": 8,
+    "EMBEDDED_WIND_CAPACITY": 6417,
+    "SETTLEMENT_DATE": "2026-10-01",
+    "ENGLAND_WALES_DEMAND": 21100,
+    "EMBEDDED_SOLAR_CAPACITY": 23963,
+    "SCOTTISH_TRANSFER": 3156,
+    "NON_BM_STOR": 0,
+    "_full_text": "'-01':3 '-10':2 '-258':19 '-500':17 '-514':25 '-654':23 '-702':21 '-817':16 '0':11,13,20 '1402':22 '1426':24 '1527':9 '2':4 '2026':1 '21100':8 '22754':5 '23963':12 '26691':7 '312':18 '3156':15 '6417':10 '8':14",
+    "SETTLEMENT_PERIOD": 2,
+    "EAST_WEST_FLOW": 0,
+    "NSL_FLOW": 1402,
+    "BRITNED_FLOW": 312,
+    "_id": 13104,
+    "EMBEDDED_SOLAR_GENERATION": 0
+   }
+  ],
+  "sql": "SELECT * FROM \"8a4a771c-3929-4e56-93ad-cdf13219dea5\" WHERE (CASE length(\"SETTLEMENT_DATE\"::text) WHEN 9 THEN to_date(\"SETTLEMENT_DATE\"::text, 'DD-Mon-YY') WHEN 11 THEN to_date(\"SETTLEMENT_DATE\"::text, 'DD-Mon-YYYY') ELSE \"SETTLEMENT_DATE\"::text::date END) BETWEEN '2026-10-01' AND '2026-10-01' ORDER BY \"_id\""
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "help": "https://api.neso.energy/api/3/action/help_show?name=datastore_search_sql",
+ "success": true,
+ "result": {
+  "records": [
+   {
+    "IFA_FLOW": 2003,
+    "TSD": 23877,
+    "VIKING_FLOW": 1419,
+    "GREENLINK_FLOW": 0,
+    "IFA2_FLOW": -1,
+    "EMBEDDED_WIND_GENERATION": 1631,
+    "ND": 22472,
+    "MOYLE_FLOW": -351,
+    "NEMO_FLOW": 993,
+    "ELECLINK_FLOW": 0,
+    "PUMP_STORAGE_PUMPING": 164,
+    "EMBEDDED_WIND_CAPACITY": 6622,
+    "SETTLEMENT_DATE": "2024-11-01",
+    "ENGLAND_WALES_DEMAND": 21051,
+    "EMBEDDED_SOLAR_CAPACITY": 18535,
+    "SCOTTISH_TRANSFER": 2153,
+    "NON_BM_STOR": 0,
+    "_full_text": "'-01':3 '-1':16 '-11':2 '-289':19 '-351':18 '0':10,12,22,24 '1':4 '1397':21 '1419':23 '1631':8 '164':13 '173':17 '18535':11 '2003':15 '2024':1 '21051':7 '2153':14 '22472':5 '23877':6 '6622':9 '993':20",
+    "SETTLEMENT_PERIOD": 1,
+    "EAST_WEST_FLOW": -289,
+    "NSL_FLOW": 1397,
+    "BRITNED_FLOW": 173,
+    "_id": 14641,
+    "EMBEDDED_SOLAR_GENERATION": 0
+   },
+   {
+    "IFA_FLOW": 2003,
+    "TSD": 24269,
+    "VIKING_FLOW": 1420,
+    "GREENLINK_FLOW": 0,
+    "IFA2_FLOW": -1,
+    "EMBEDDED_WIND_GENERATION": 1632,
+    "ND": 22591,
+    "MOYLE_FLOW": -351,
+    "NEMO_FLOW": 995,
+    "ELECLINK_FLOW": 0,
+    "PUMP_STORAGE_PUMPING": 565,
+    "EMBEDDED_WIND_CAPACITY": 6622,
+    "SETTLEMENT_DATE": "2024-11-01",
+    "ENGLAND_WALES_DEMAND": 21248,
+    "EMBEDDED_SOLAR_CAPACITY": 18535,
+    "SCOTTISH_TRANSFER": 2230,
+    "NON_BM_STOR": 0,
+    "_full_text": "'-01':3 '-1':16 '-11':2 '-161':19 '-351':18 '0':10,12,22,24 '1397':21 '1420':23 '1632':8 '18535':11 '193':17 '2':4 '2003':15 '2024':1 '21248':7 '2230':14 '22591':5 '24269':6 '565':13 '6622':9 '995':20",
+    "SETTLEMENT_PERIOD": 2,
+    "EAST_WEST_FLOW": -161,
+    "NSL_FLOW": 1397,
+    "BRITNED_FLOW": 193,
+    "_id": 14642,
+    "EMBEDDED_SOLAR_GENERATION": 0
+   }
+  ],
+  "sql": "SELECT * FROM \"f6d02c0f-957b-48cb-82ee-09003f2ba759\" WHERE (CASE length(\"SETTLEMENT_DATE\"::text) WHEN 9 THEN to_date(\"SETTLEMENT_DATE\"::text, 'DD-Mon-YY') WHEN 11 THEN to_date(\"SETTLEMENT_DATE\"::text, 'DD-Mon-YYYY') ELSE \"SETTLEMENT_DATE\"::text::date END) BETWEEN '2024-11-01' AND '2024-11-01' ORDER BY \"_id\""
+ }
+}

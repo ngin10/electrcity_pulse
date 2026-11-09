@@ -1,0 +1,42 @@
+{
+ "metadata": {
+  "datasets": [
+   "INDO",
+   "ITSDO"
+  ]
+ },
+ "data": [
+  {
+   "publishTime": "2026-11-01T00:30:00Z",
+   "startTime": "2026-11-01T00:00:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 1,
+   "initialDemandOutturn": 24204,
+   "initialTransmissionSystemDemandOutturn": 25622
+  },
+  {
+   "publishTime": "2026-11-01T01:00:00Z",
+   "startTime": "2026-11-01T00:30:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 2,
+   "initialDemandOutturn": 24530,
+   "initialTransmissionSystemDemandOutturn": 25874
+  },
+  {
+   "publishTime": "2026-11-01T01:30:00Z",
+   "startTime": "2026-11-01T01:00:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 3,
+   "initialDemandOutturn": 24184,
+   "initialTransmissionSystemDemandOutturn": 25666
+  },
+  {
+   "publishTime": "2026-11-01T02:00:00Z",
+   "startTime": "2026-11-01T01:30:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 4,
+   "initialDemandOutturn": 23421,
+   "initialTransmissionSystemDemandOutturn": 24795
+  }
+ ]
+}

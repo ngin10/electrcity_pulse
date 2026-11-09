@@ -1,0 +1,40 @@
+{
+ "data": [
+  {
+   "dataset": "NDF",
+   "demand": 35341,
+   "publishTime": "2026-11-01T17:47:00Z",
+   "startTime": "2026-11-01T18:00:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 37,
+   "boundary": "N"
+  },
+  {
+   "dataset": "NDF",
+   "demand": 34420,
+   "publishTime": "2026-11-01T17:47:00Z",
+   "startTime": "2026-11-01T18:30:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 38,
+   "boundary": "N"
+  },
+  {
+   "dataset": "NDF",
+   "demand": 34101,
+   "publishTime": "2026-11-01T17:47:00Z",
+   "startTime": "2026-11-01T19:00:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 39,
+   "boundary": "N"
+  },
+  {
+   "dataset": "NDF",
+   "demand": 32558,
+   "publishTime": "2026-11-01T17:47:00Z",
+   "startTime": "2026-11-01T19:30:00Z",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 40,
+   "boundary": "N"
+  }
+ ]
+}

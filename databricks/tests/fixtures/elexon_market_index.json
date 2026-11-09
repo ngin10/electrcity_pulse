@@ -1,0 +1,40 @@
+{
+ "data": [
+  {
+   "dataset": "MID",
+   "startTime": "2026-11-01T23:30:00Z",
+   "dataProvider": "APXMIDP",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 48,
+   "price": 203.83,
+   "volume": 1876.65
+  },
+  {
+   "dataset": "MID",
+   "startTime": "2026-11-01T23:30:00Z",
+   "dataProvider": "N2EXMIDP",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 48,
+   "price": 0.0,
+   "volume": 0.0
+  },
+  {
+   "dataset": "MID",
+   "startTime": "2026-11-01T23:00:00Z",
+   "dataProvider": "APXMIDP",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 47,
+   "price": 194.9,
+   "volume": 2022.5
+  },
+  {
+   "dataset": "MID",
+   "startTime": "2026-11-01T23:00:00Z",
+   "dataProvider": "N2EXMIDP",
+   "settlementDate": "2026-11-01",
+   "settlementPeriod": 47,
+   "price": 0.0,
+   "volume": 0.0
+  }
+ ]
+}

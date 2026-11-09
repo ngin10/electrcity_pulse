@@ -1,0 +1,40 @@
+{
+ "data": [
+  {
+   "from": "2026-10-31T23:30Z",
+   "to": "2026-11-01T00:00Z",
+   "intensity": {
+    "forecast": 197,
+    "actual": 190,
+    "index": "high"
+   }
+  },
+  {
+   "from": "2026-11-01T00:00Z",
+   "to": "2026-11-01T00:30Z",
+   "intensity": {
+    "forecast": 197,
+    "actual": 190,
+    "index": "high"
+   }
+  },
+  {
+   "from": "2026-11-01T00:30Z",
+   "to": "2026-11-01T01:00Z",
+   "intensity": {
+    "forecast": 199,
+    "actual": 183,
+    "index": "high"
+   }
+  },
+  {
+   "from": "2026-11-01T01:00Z",
+   "to": "2026-11-01T01:30Z",
+   "intensity": {
+    "forecast": 195,
+    "actual": 184,
+    "index": "high"
+   }
+  }
+ ]
+}

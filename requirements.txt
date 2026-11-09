@@ -1,0 +1,10 @@
+requests>=2.32
+urllib3>=2.2
+confluent-kafka>=2.6
+tzdata>=2024.1
+pandas>=2.2
+pyarrow>=17.0
+# Lets the consumer write gs:// paths
+fsspec>=2024.6
+gcsfs>=2024.6
+pytest>=8.0
