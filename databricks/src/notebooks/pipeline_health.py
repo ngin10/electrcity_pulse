@@ -103,7 +103,7 @@ for r in gaps.collect():
 # COMMAND ----------
 
 features = spark.table(f'{GOLD}.features_day_ahead')  # noqa: F821
-summary = features.agg(F.max(F.when('is_trainable', F.col('target_date'))).alias('last_trainable_date'),
+summary = features.agg(F.max(F.when(F.col('is_trainable'), F.col('target_date'))).alias('last_trainable_date'),
                        F.sum(F.col('is_trainable').cast('int')).alias('trainable_days'),
                        F.count('*').alias('days')).first()
 display(spark.createDataFrame([summary.asDict()]))  # noqa: F821
