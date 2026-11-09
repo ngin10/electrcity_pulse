@@ -225,3 +225,9 @@ data/
 # Cloud credentials
 *-key.json
 secrets/
+
+# Batch-source checkpoints (runtime state)
+state/batch/
+
+# Databricks bundle deploy state
+.databricks/

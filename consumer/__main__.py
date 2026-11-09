@@ -1,3 +1,9 @@
+"""Consumer entry point: python -m consumer [--once]
+
+Reads the FUELHH topic in batches and lands every message, unchanged, as Parquet under LANDING_PATH.
+Kafka offsets are committed only after a batch's file is stored, so a crash means the batch is read
+again (possibly landing twice, which readers deduplicate) but never lost.
+"""
 import argparse
 import logging
 import signal
@@ -13,11 +19,12 @@ log = logging.getLogger('pulse.consumer')
 
 
 class ConsumerError(Exception):
-    pass
+    """An unrecoverable Kafka error: stop without committing."""
 
 
 def process_batch(consumer, settings, messages):
     """Append one batch to the landing zone and commit its offsets; returns the number of rows stored."""
+    # One timestamp for the whole batch: when it was read
     consumed_at = datetime.now(timezone.utc).isoformat()
     rows = []
     for msg in messages:
@@ -25,6 +32,7 @@ def process_batch(consumer, settings, messages):
         if err is not None:
             if err.fatal():
                 raise ConsumerError(str(err))
+            # A temporary notice from the broker (e.g. end of partition), not a message
             log.warning('Consumer error: %s', err)
             continue
         if msg.value() is None:
@@ -37,7 +45,8 @@ def process_batch(consumer, settings, messages):
         append_rows(settings.landing_path, LANDING_TABLE, rows)
         log.info('Appended %d rows to landing', len(rows))
 
-    # Commit only after files are written: a crash before this replays the batch, and readers drop the duplicates
+    # Commit only after files are written: a crash before this replays the batch, and readers drop the duplicates.
+    # asynchronous=False waits for Kafka to confirm the commit before reading the next batch
     consumer.commit(asynchronous=False)
     return len(rows)
 
@@ -53,6 +62,7 @@ def main():
         format='%(asctime)s %(levelname)s %(name)s: %(message)s',
     )
 
+    # Ctrl+C or a kill request sets this flag, so the consumer stops cleanly after the current batch
     stop_event = threading.Event()
 
     def request_stop(signum, _frame):
@@ -70,6 +80,7 @@ def main():
     exit_code = 0
     try:
         while not stop_event.is_set():
+            # Up to batch_max_messages, or whatever arrived within batch_timeout_seconds
             messages = consumer.consume(settings.batch_max_messages, settings.batch_timeout_seconds)
             if not messages:
                 # An empty poll before partitions are assigned doesn't mean the topic is drained
@@ -78,11 +89,14 @@ def main():
                 continue
             process_batch(consumer, settings, messages)
     except Exception:
+        # Whatever failed, the current batch wasn't committed, so nothing is lost
         log.exception('Consumer stopped on error; uncommitted messages will be re-read on restart')
         exit_code = 1
     finally:
+        # Leave the consumer group cleanly, so Kafka hands the partitions over without waiting
         consumer.close()
 
+    # Non-zero tells a scheduler the run failed
     return exit_code
 
 

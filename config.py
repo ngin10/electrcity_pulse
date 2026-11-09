@@ -1,15 +1,18 @@
+"""Producer settings, read from environment variables (defaults and descriptions in .env.example)."""
 import os
 from dataclasses import dataclass
 from datetime import date
 
 
 def _env(name, default=None):
+    """An environment variable's value, treating unset and empty ('') the same: use the default."""
     value = os.getenv(name)
     return value if value not in (None, '') else default
 
 
 @dataclass(frozen=True)
 class Settings:
+    """Everything the producer needs; frozen so nothing changes it mid-run."""
     api_url: str
     kafka_bootstrap: str
     topic: str
@@ -37,11 +40,15 @@ def load_settings():
         topic=_env('KAFKA_TOPIC', 'elexon.fuelhh'),
         topic_partitions=int(_env('KAFKA_TOPIC_PARTITIONS', 3)),
         topic_replication=int(_env('KAFKA_TOPIC_REPLICATION', 1)),
+        # Last settlement date fully delivered to Kafka
         checkpoint_path=_env('CHECKPOINT_PATH', 'state/checkpoint.json'),
+        # First run only: where the history starts
         backfill_start=date.fromisoformat(backfill) if backfill else None,
         initial_lookback_days=int(_env('INITIAL_LOOKBACK_DAYS', 7)),
+        # Recent days re-fetched every run, because Elexon revises them
         revision_lookback_days=int(_env('REVISION_LOOKBACK_DAYS', 2)),
         chunk_days=chunk_days,
+        # Pause between passes when running without --once (30 minutes, Elexon's update rhythm)
         poll_interval_seconds=int(_env('POLL_INTERVAL_SECONDS', 1800)),
         log_level=_env('LOG_LEVEL', 'INFO'),
     )
