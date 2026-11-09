@@ -11,7 +11,7 @@
 #   <table>_current            for sources with current_keys (REMIT): the latest revision per message
 # Plus completeness (periods present per day) and rejected_summary (reasons per day).
 #
-# Pipeline configuration: pulse.src_path. Session time zone must be UTC (set in the pipeline's settings).
+# Pipeline configuration: pulse.src_path, pulse.catalog. Session time zone must be UTC (set in the pipeline's settings).
 import sys
 
 sys.path.append(spark.conf.get('pulse.src_path'))  # noqa: F821
@@ -22,8 +22,10 @@ from pyspark.sql import functions as F  # noqa: E402
 
 from pulse import pipeline_api as dp  # noqa: E402
 from pulse.quality import check, daily_completeness, rejected_rows, valid_rows  # noqa: E402
-from pulse.settings import BRONZE  # noqa: E402
+from pulse.settings import CATALOG_DEFAULT, schema  # noqa: E402
 from pulse.sources import SOURCES  # noqa: E402
+
+BRONZE = schema(spark.conf.get('pulse.catalog', CATALOG_DEFAULT), 'bronze')  # noqa: F821
 
 dp.create_streaming_table(
     name='rejected',

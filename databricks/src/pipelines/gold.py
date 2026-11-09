@@ -3,14 +3,16 @@
 # Materialized views are recomputed from silver on each update (incrementally where Databricks can), which
 # suits gold: daily totals and features depend on whole days, not on single new rows.
 #
-# Pipeline configuration: pulse.src_path. Session time zone must be UTC (set in the pipeline's settings).
+# Pipeline configuration: pulse.src_path, pulse.catalog. Session time zone must be UTC (set in the pipeline's settings).
 import sys
 
 sys.path.append(spark.conf.get('pulse.src_path'))  # noqa: F821
 
 from pulse import gold  # noqa: E402
 from pulse import pipeline_api as dp  # noqa: E402
-from pulse.settings import SILVER  # noqa: E402
+from pulse.settings import CATALOG_DEFAULT, schema  # noqa: E402
+
+SILVER = schema(spark.conf.get('pulse.catalog', CATALOG_DEFAULT), 'silver')  # noqa: F821
 
 
 def silver(table):

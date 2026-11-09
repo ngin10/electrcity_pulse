@@ -18,9 +18,14 @@ sys.path.append(os.path.abspath('..'))  # src/, for the shared settings
 
 from pyspark.sql import functions as F
 
-from pulse.settings import BRONZE, BRONZE_TABLES, GOLD, LANDING_DEFAULT, SILVER
+from pulse.settings import BRONZE_TABLES, CATALOG_DEFAULT, landing_volume, schema
 
-LANDING = LANDING_DEFAULT
+# Job parameters (set by resources/job.yml); the defaults suit a run by hand on Free Edition
+dbutils.widgets.text('catalog', CATALOG_DEFAULT)  # noqa: F821
+dbutils.widgets.text('landing_path', '')  # noqa: F821
+CATALOG = dbutils.widgets.get('catalog')  # noqa: F821
+LANDING = dbutils.widgets.get('landing_path') or landing_volume(CATALOG)  # noqa: F821
+BRONZE, SILVER, GOLD = (schema(CATALOG, layer) for layer in ('bronze', 'silver', 'gold'))
 problems = []
 
 # COMMAND ----------
@@ -31,7 +36,7 @@ problems = []
 
 
 def landing_file_count(table):
-    """.parquet files in GCS for one landing folder."""
+    """.parquet files in one landing folder (in GCS, or in the volume copy)."""
     total = 0
     for partition in dbutils.fs.ls(f'{LANDING}/{table}'):  # noqa: F821 (provided by Databricks)
         if partition.name.startswith('ingest_date='):

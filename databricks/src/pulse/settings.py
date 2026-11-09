@@ -1,13 +1,26 @@
 """Names and constants shared by every layer. Pipelines read overrides from their configuration."""
 
-CATALOG = 'pulse'
-BRONZE = f'{CATALOG}.bronze'
-SILVER = f'{CATALOG}.silver'
-GOLD = f'{CATALOG}.gold'
+# The catalog holding the bronze, silver and gold schemas. A setting, not a constant: Free Edition may not let
+# you create a catalog, and then the built-in `workspace` catalog is used. Pipelines read it from their
+# configuration (pulse.catalog), the health notebook from a job parameter
+CATALOG_DEFAULT = 'pulse'
 
-# Written by the ingestion repo (consumer/ and batch_ingest/); the pipeline configuration key pulse.landing
-# overrides it
-LANDING_DEFAULT = 'gs://databricks_1/electricity_gen_by_fuel/landing'
+
+def schema(catalog, layer):
+    """The full name of a layer's schema, e.g. pulse.bronze."""
+    return f'{catalog}.{layer}'
+
+
+# Where bronze reads the landing files from (pipeline configuration pulse.landing):
+# - the GCS landing zone itself, written by the ingestion code (consumer/ and batch_ingest/): Databricks
+#   reads it through a Unity Catalog external location. Needs Databricks on Google Cloud.
+# - a Unity Catalog volume holding a copy of it, made by tools/sync_landing.py: Databricks Free Edition,
+#   which can't reach your own bucket.
+LANDING_GCS = 'gs://databricks_1/electricity_gen_by_fuel/landing'
+
+
+def landing_volume(catalog):
+    return f'/Volumes/{catalog}/bronze/landing'
 
 UK_TZ = 'Europe/London'
 

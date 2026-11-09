@@ -1,0 +1,2 @@
+# For tools/sync_landing.py, run on your own machine (plus the gcloud CLI)
+databricks-sdk
