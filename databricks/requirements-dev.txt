@@ -1,0 +1,3 @@
+# For running databricks/tests locally or in CI (Databricks itself provides Spark). Needs Java 17.
+pyspark==4.0.1
+pytest

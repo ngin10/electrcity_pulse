@@ -1,0 +1,7 @@
+services:
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: pulse-kafka
+    # Default image config runs a single-node KRaft broker advertising localhost:9092
+    ports:
+      - "9092:9092"

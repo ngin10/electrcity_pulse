@@ -1,0 +1,46 @@
+# The three pipelines: one per layer, so each can fail, refresh and be full-refreshed on its own.
+# A full refresh of silver or gold rebuilds it from the layer below; bronze is never touched by either.
+resources:
+  pipelines:
+    pulse_bronze:
+      name: pulse_bronze
+      catalog: pulse
+      schema: bronze
+      serverless: true
+      continuous: false      # triggered: load what is new, then stop
+      channel: CURRENT
+      configuration:
+        pulse.src_path: ${workspace.file_path}/src
+        pulse.landing: ${var.landing_path}
+        spark.sql.session.timeZone: UTC
+      libraries:
+        - file:
+            path: ../src/pipelines/bronze.py
+
+    pulse_silver:
+      name: pulse_silver
+      catalog: pulse
+      schema: silver
+      serverless: true
+      continuous: false
+      channel: CURRENT
+      configuration:
+        pulse.src_path: ${workspace.file_path}/src
+        spark.sql.session.timeZone: UTC
+      libraries:
+        - file:
+            path: ../src/pipelines/silver.py
+
+    pulse_gold:
+      name: pulse_gold
+      catalog: pulse
+      schema: gold
+      serverless: true
+      continuous: false
+      channel: CURRENT
+      configuration:
+        pulse.src_path: ${workspace.file_path}/src
+        spark.sql.session.timeZone: UTC
+      libraries:
+        - file:
+            path: ../src/pipelines/gold.py

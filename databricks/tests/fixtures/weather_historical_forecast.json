@@ -1,0 +1,221 @@
+[
+ {
+  "latitude": 54.79701,
+  "longitude": 1.9060204,
+  "generationtime_ms": 0.2834796905517578,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 0.0,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m": "km/h",
+   "wind_speed_10m": "km/h",
+   "shortwave_radiation": "W/m²",
+   "temperature_2m": "°C",
+   "cloud_cover": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m": [
+    22.5,
+    22.8
+   ],
+   "wind_speed_10m": [
+    19.6,
+    20.7
+   ],
+   "shortwave_radiation": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m": [
+    12.3,
+    12.3
+   ],
+   "cloud_cover": [
+    51,
+    88
+   ]
+  }
+ },
+ {
+  "latitude": 52.6,
+  "longitude": 2.204,
+  "generationtime_ms": 0.09262561798095703,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 0.0,
+  "location_id": 1,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m": "km/h",
+   "wind_speed_10m": "km/h",
+   "shortwave_radiation": "W/m²",
+   "temperature_2m": "°C",
+   "cloud_cover": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m": [
+    5.8,
+    11.5
+   ],
+   "wind_speed_10m": [
+    6.1,
+    11.5
+   ],
+   "shortwave_radiation": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m": [
+    11.9,
+    12.4
+   ],
+   "cloud_cover": [
+    100,
+    100
+   ]
+  }
+ },
+ {
+  "latitude": 53.7978,
+  "longitude": -3.5962524,
+  "generationtime_ms": 0.08130073547363281,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 0.0,
+  "location_id": 2,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m": "km/h",
+   "wind_speed_10m": "km/h",
+   "shortwave_radiation": "W/m²",
+   "temperature_2m": "°C",
+   "cloud_cover": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m": [
+    6.5,
+    6.8
+   ],
+   "wind_speed_10m": [
+    5.8,
+    6.5
+   ],
+   "shortwave_radiation": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m": [
+    12.1,
+    12.1
+   ],
+   "cloud_cover": [
+    94,
+    84
+   ]
+  }
+ },
+ {
+  "latitude": 56.99581,
+  "longitude": -3.9857635,
+  "generationtime_ms": 34.89553928375244,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 577.0,
+  "location_id": 3,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m": "km/h",
+   "wind_speed_10m": "km/h",
+   "shortwave_radiation": "W/m²",
+   "temperature_2m": "°C",
+   "cloud_cover": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m": [
+    15.1,
+    13.7
+   ],
+   "wind_speed_10m": [
+    9.7,
+    9.4
+   ],
+   "shortwave_radiation": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m": [
+    8.0,
+    7.6
+   ],
+   "cloud_cover": [
+    100,
+    100
+   ]
+  }
+ },
+ {
+  "latitude": 51.50825,
+  "longitude": -0.99786377,
+  "generationtime_ms": 0.10454654693603516,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 82.0,
+  "location_id": 4,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m": "km/h",
+   "wind_speed_10m": "km/h",
+   "shortwave_radiation": "W/m²",
+   "temperature_2m": "°C",
+   "cloud_cover": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m": [
+    8.6,
+    9.0
+   ],
+   "wind_speed_10m": [
+    8.3,
+    7.2
+   ],
+   "shortwave_radiation": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m": [
+    6.5,
+    6.1
+   ],
+   "cloud_cover": [
+    0,
+    32
+   ]
+  }
+ }
+]
