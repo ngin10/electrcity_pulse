@@ -1,0 +1,56 @@
+{
+ "data": [
+  {
+   "dataset": "DGWS",
+   "documentId": "NGET-EMFIP-DGWS-11012630",
+   "documentRevisionNumber": 1,
+   "publishTime": "2026-11-01T16:45:02Z",
+   "processType": "Day ahead",
+   "businessType": "Solar generation",
+   "psrType": "Solar",
+   "quantity": 0.0,
+   "startTime": "2026-11-02T23:30:00Z",
+   "settlementDate": "2026-11-02",
+   "settlementPeriod": 48
+  },
+  {
+   "dataset": "DGWS",
+   "documentId": "NGET-EMFIP-DGWS-11012630",
+   "documentRevisionNumber": 1,
+   "publishTime": "2026-11-01T16:45:02Z",
+   "processType": "Day ahead",
+   "businessType": "Wind generation",
+   "psrType": "Wind Offshore",
+   "quantity": 7991.0,
+   "startTime": "2026-11-02T23:30:00Z",
+   "settlementDate": "2026-11-02",
+   "settlementPeriod": 48
+  },
+  {
+   "dataset": "DGWS",
+   "documentId": "NGET-EMFIP-DGWS-11012630",
+   "documentRevisionNumber": 1,
+   "publishTime": "2026-11-01T16:45:02Z",
+   "processType": "Day ahead",
+   "businessType": "Wind generation",
+   "psrType": "Wind Onshore",
+   "quantity": 1702.0,
+   "startTime": "2026-11-02T23:30:00Z",
+   "settlementDate": "2026-11-02",
+   "settlementPeriod": 48
+  },
+  {
+   "dataset": "DGWS",
+   "documentId": "NGET-EMFIP-DGWS-11012630",
+   "documentRevisionNumber": 1,
+   "publishTime": "2026-11-01T16:45:02Z",
+   "processType": "Day ahead",
+   "businessType": "Wind generation",
+   "psrType": "Wind Onshore",
+   "quantity": 1708.0,
+   "startTime": "2026-11-02T23:00:00Z",
+   "settlementDate": "2026-11-02",
+   "settlementPeriod": 47
+  }
+ ]
+}

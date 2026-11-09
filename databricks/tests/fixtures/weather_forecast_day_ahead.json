@@ -1,0 +1,221 @@
+[
+ {
+  "latitude": 54.79701,
+  "longitude": 1.9060204,
+  "generationtime_ms": 2.8842687606811523,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 0.0,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m_previous_day1": "km/h",
+   "wind_speed_10m_previous_day1": "km/h",
+   "shortwave_radiation_previous_day1": "W/m²",
+   "temperature_2m_previous_day1": "°C",
+   "cloud_cover_previous_day1": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m_previous_day1": [
+    24.6,
+    26.2
+   ],
+   "wind_speed_10m_previous_day1": [
+    23.3,
+    25.1
+   ],
+   "shortwave_radiation_previous_day1": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m_previous_day1": [
+    11.2,
+    10.8
+   ],
+   "cloud_cover_previous_day1": [
+    94,
+    97
+   ]
+  }
+ },
+ {
+  "latitude": 52.6,
+  "longitude": 2.204,
+  "generationtime_ms": 0.09500980377197266,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 0.0,
+  "location_id": 1,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m_previous_day1": "km/h",
+   "wind_speed_10m_previous_day1": "km/h",
+   "shortwave_radiation_previous_day1": "W/m²",
+   "temperature_2m_previous_day1": "°C",
+   "cloud_cover_previous_day1": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m_previous_day1": [
+    6.1,
+    2.5
+   ],
+   "wind_speed_10m_previous_day1": [
+    6.1,
+    2.5
+   ],
+   "shortwave_radiation_previous_day1": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m_previous_day1": [
+    11.6,
+    12.4
+   ],
+   "cloud_cover_previous_day1": [
+    100,
+    100
+   ]
+  }
+ },
+ {
+  "latitude": 53.7978,
+  "longitude": -3.5962524,
+  "generationtime_ms": 0.09715557098388672,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 0.0,
+  "location_id": 2,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m_previous_day1": "km/h",
+   "wind_speed_10m_previous_day1": "km/h",
+   "shortwave_radiation_previous_day1": "W/m²",
+   "temperature_2m_previous_day1": "°C",
+   "cloud_cover_previous_day1": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m_previous_day1": [
+    12.6,
+    14.0
+   ],
+   "wind_speed_10m_previous_day1": [
+    11.2,
+    11.9
+   ],
+   "shortwave_radiation_previous_day1": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m_previous_day1": [
+    13.3,
+    13.6
+   ],
+   "cloud_cover_previous_day1": [
+    3,
+    87
+   ]
+  }
+ },
+ {
+  "latitude": 56.99581,
+  "longitude": -3.9857635,
+  "generationtime_ms": 14.131665229797363,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 577.0,
+  "location_id": 3,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m_previous_day1": "km/h",
+   "wind_speed_10m_previous_day1": "km/h",
+   "shortwave_radiation_previous_day1": "W/m²",
+   "temperature_2m_previous_day1": "°C",
+   "cloud_cover_previous_day1": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m_previous_day1": [
+    18.0,
+    13.7
+   ],
+   "wind_speed_10m_previous_day1": [
+    9.7,
+    6.5
+   ],
+   "shortwave_radiation_previous_day1": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m_previous_day1": [
+    7.1,
+    6.6
+   ],
+   "cloud_cover_previous_day1": [
+    100,
+    82
+   ]
+  }
+ },
+ {
+  "latitude": 51.50825,
+  "longitude": -0.99786377,
+  "generationtime_ms": 0.0896453857421875,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 82.0,
+  "location_id": 4,
+  "hourly_units": {
+   "time": "iso8601",
+   "wind_speed_100m_previous_day1": "km/h",
+   "wind_speed_10m_previous_day1": "km/h",
+   "shortwave_radiation_previous_day1": "W/m²",
+   "temperature_2m_previous_day1": "°C",
+   "cloud_cover_previous_day1": "%"
+  },
+  "hourly": {
+   "time": [
+    "2026-11-01T00:00",
+    "2026-11-01T01:00"
+   ],
+   "wind_speed_100m_previous_day1": [
+    7.9,
+    7.9
+   ],
+   "wind_speed_10m_previous_day1": [
+    6.5,
+    8.3
+   ],
+   "shortwave_radiation_previous_day1": [
+    0.0,
+    0.0
+   ],
+   "temperature_2m_previous_day1": [
+    6.4,
+    6.6
+   ],
+   "cloud_cover_previous_day1": [
+    0,
+    0
+   ]
+  }
+ }
+]

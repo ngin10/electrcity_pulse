@@ -1,0 +1,215 @@
+{
+ "data": [
+  {
+   "dataset": "REMIT",
+   "mrid": "11XINNOGY------2-NGET-RMT-00219922",
+   "revisionNumber": 6,
+   "publishTime": "2026-11-01T23:28:11Z",
+   "createdTime": "2026-11-01T23:26:54Z",
+   "messageType": "UnavailabilitiesOfElectricityFacilities",
+   "messageHeading": "Actual Availability of Generation Unit",
+   "eventType": "Production unavailability",
+   "unavailabilityType": "Unplanned",
+   "participantId": "INNOGY01",
+   "registrationCode": "11XINNOGY------2",
+   "assetId": "T_LBAR-1",
+   "assetType": "Production",
+   "affectedUnit": "LBAR-1",
+   "affectedUnitEIC": "48W000000LBAR-1Y",
+   "biddingZone": "10YGB----------A",
+   "fuelType": "Fossil Gas",
+   "normalCapacity": 735.0,
+   "availableCapacity": 704.0,
+   "unavailableCapacity": 26.0,
+   "eventStatus": "Inactive",
+   "eventStartTime": "2026-11-01T11:42:49Z",
+   "eventEndTime": "2026-11-01T23:26:50Z",
+   "cause": "Turbine / Generator",
+   "relatedInformation": "Status changed to Completed",
+   "outageProfile": [
+    {
+     "startTime": "2026-11-01T11:42:49Z",
+     "endTime": "2026-11-01T11:42:49Z",
+     "capacity": 730.0
+    },
+    {
+     "startTime": "2026-11-01T11:42:49Z",
+     "endTime": "2026-11-01T11:43:49Z",
+     "capacity": 0.0
+    },
+    {
+     "startTime": "2026-11-01T11:43:49Z",
+     "endTime": "2026-11-01T22:00:00Z",
+     "capacity": 0.0
+    },
+    {
+     "startTime": "2026-11-01T22:00:00Z",
+     "endTime": "2026-11-01T22:50:00Z",
+     "capacity": 180.0
+    },
+    {
+     "startTime": "2026-11-01T22:50:00Z",
+     "endTime": "2026-11-01T23:09:03Z",
+     "capacity": 260.0
+    },
+    {
+     "startTime": "2026-11-01T23:09:03Z",
+     "endTime": "2026-11-01T23:26:50Z",
+     "capacity": 704.0
+    }
+   ]
+  },
+  {
+   "dataset": "REMIT",
+   "mrid": "11XINNOGY------2-NGET-RMT-00219922",
+   "revisionNumber": 5,
+   "publishTime": "2026-11-01T22:03:19Z",
+   "createdTime": "2026-11-01T22:00:05Z",
+   "messageType": "UnavailabilitiesOfElectricityFacilities",
+   "messageHeading": "Actual Availability of Generation Unit",
+   "eventType": "Production unavailability",
+   "unavailabilityType": "Unplanned",
+   "participantId": "INNOGY01",
+   "registrationCode": "11XINNOGY------2",
+   "assetId": "T_LBAR-1",
+   "assetType": "Production",
+   "affectedUnit": "LBAR-1",
+   "affectedUnitEIC": "48W000000LBAR-1Y",
+   "biddingZone": "10YGB----------A",
+   "fuelType": "Fossil Gas",
+   "normalCapacity": 735.0,
+   "availableCapacity": 704.0,
+   "unavailableCapacity": 26.0,
+   "eventStatus": "Active",
+   "eventStartTime": "2026-11-01T11:42:49Z",
+   "eventEndTime": "2026-11-01T23:26:50Z",
+   "cause": "Turbine / Generator",
+   "relatedInformation": "Change in current availability to 704MW",
+   "outageProfile": [
+    {
+     "startTime": "2026-11-01T11:42:49Z",
+     "endTime": "2026-11-01T11:42:49Z",
+     "capacity": 730.0
+    },
+    {
+     "startTime": "2026-11-01T11:42:49Z",
+     "endTime": "2026-11-01T11:43:49Z",
+     "capacity": 0.0
+    },
+    {
+     "startTime": "2026-11-01T11:43:49Z",
+     "endTime": "2026-11-01T22:00:00Z",
+     "capacity": 0.0
+    },
+    {
+     "startTime": "2026-11-01T22:00:00Z",
+     "endTime": "2026-11-01T22:50:00Z",
+     "capacity": 180.0
+    },
+    {
+     "startTime": "2026-11-01T22:50:00Z",
+     "endTime": "2026-11-01T23:09:03Z",
+     "capacity": 260.0
+    },
+    {
+     "startTime": "2026-11-01T23:09:03Z",
+     "endTime": "2026-11-01T23:26:50Z",
+     "capacity": 704.0
+    }
+   ]
+  },
+  {
+   "dataset": "REMIT",
+   "mrid": "48X000000000292I-NGET-RMT-00219940",
+   "revisionNumber": 4,
+   "publishTime": "2026-11-01T21:33:02Z",
+   "createdTime": "2026-11-01T21:31:20Z",
+   "messageType": "UnavailabilitiesOfElectricityFacilities",
+   "messageHeading": "Actual Availability of Generation Unit",
+   "eventType": "Production unavailability",
+   "unavailabilityType": "Unplanned",
+   "participantId": "TKWFL",
+   "registrationCode": "48X000000000292I",
+   "assetId": "T_TKNWW-1",
+   "assetType": "Production",
+   "affectedUnit": "TKNWW-1",
+   "affectedUnitEIC": "48W00000TKNWW-1E",
+   "biddingZone": "10YGB----------A",
+   "fuelType": "Wind Offshore",
+   "normalCapacity": 390.0,
+   "availableCapacity": 0.0,
+   "unavailableCapacity": 395.0,
+   "eventStatus": "Active",
+   "eventStartTime": "2026-11-03T04:50:22Z",
+   "eventEndTime": "2026-11-03T05:00:00Z",
+   "cause": "Turbine / Generator",
+   "relatedInformation": "Available MW At Event Start changed to 395MW; Event Start Date / Time changed to 03 Nov 2026 04:50 (GMT); Detailed MEL profile has changed",
+   "outageProfile": [
+    {
+     "startTime": "2026-11-03T04:50:22Z",
+     "endTime": "2026-11-03T04:50:22Z",
+     "capacity": 395.0
+    },
+    {
+     "startTime": "2026-11-03T04:50:22Z",
+     "endTime": "2026-11-03T04:59:00Z",
+     "capacity": 41.0
+    },
+    {
+     "startTime": "2026-11-03T04:59:00Z",
+     "endTime": "2026-11-03T05:00:00Z",
+     "capacity": 0.0
+    }
+   ]
+  },
+  {
+   "dataset": "REMIT",
+   "mrid": "48X000000000292I-NGET-RMT-00219654",
+   "revisionNumber": 9,
+   "publishTime": "2026-11-01T20:53:55Z",
+   "createdTime": "2026-11-01T20:52:16Z",
+   "messageType": "UnavailabilitiesOfElectricityFacilities",
+   "messageHeading": "Planned Unavailability of Generation Unit",
+   "eventType": "Production unavailability",
+   "unavailabilityType": "Planned",
+   "participantId": "TKWFL",
+   "registrationCode": "48X000000000292I",
+   "assetId": "T_TKNEW-1",
+   "assetType": "Production",
+   "affectedUnit": "TKNEW-1",
+   "affectedUnitEIC": "48W00000TKNEW-1U",
+   "biddingZone": "10YGB----------A",
+   "fuelType": "Wind Offshore",
+   "normalCapacity": 390.0,
+   "availableCapacity": 302.0,
+   "unavailableCapacity": 110.0,
+   "eventStatus": "Active",
+   "eventStartTime": "2026-11-08T06:29:00Z",
+   "eventEndTime": "2026-11-08T11:00:00Z",
+   "cause": "Ambient Conditions",
+   "relatedInformation": "Minimum Available MW During Event changed to 302MW; Detailed MEL profile has changed",
+   "outageProfile": [
+    {
+     "startTime": "2026-11-08T06:29:00Z",
+     "endTime": "2026-11-08T06:29:00Z",
+     "capacity": 412.0
+    },
+    {
+     "startTime": "2026-11-08T06:29:00Z",
+     "endTime": "2026-11-08T06:30:00Z",
+     "capacity": 302.0
+    },
+    {
+     "startTime": "2026-11-08T06:30:00Z",
+     "endTime": "2026-11-08T10:59:00Z",
+     "capacity": 302.0
+    },
+    {
+     "startTime": "2026-11-08T10:59:00Z",
+     "endTime": "2026-11-08T11:00:00Z",
+     "capacity": 393.0
+    }
+   ]
+  }
+ ]
+}
