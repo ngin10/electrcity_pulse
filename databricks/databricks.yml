@@ -2,11 +2,20 @@
 #
 #   databricks auth login --host https://<your-workspace-url>
 #   databricks bundle validate
-#   databricks bundle deploy          # uploads src/ and creates or updates the pipelines and job
-#   databricks bundle run pulse_daily # runs bronze -> silver -> gold -> health once
+#   databricks bundle deploy             # uploads src/ and creates or updates the pipelines and job
+#   databricks bundle run pulse_daily    # runs bronze -> silver -> gold -> health once
 #
-# The dev target (the default) prefixes resource names with your user name and pauses schedules, so a
-# deploy can't start anything on its own.
+# Two targets, the same code:
+# - free (the default): Databricks Free Edition. It can't reach your own bucket, so bronze reads a volume that
+#   tools/sync_landing.py keeps in step with the GCS landing zone. Costs nothing.
+# - gcp: Databricks on Google Cloud. Bronze reads the GCS landing zone directly through a Unity Catalog
+#   external location (src/setup/00_setup_gcp.sql). Deploy with: databricks bundle deploy -t gcp
+#
+# If Free Edition won't let you create the `pulse` catalog, use its built-in one:
+#   databricks bundle deploy --var="catalog=workspace" --var="landing_path=/Volumes/workspace/bronze/landing"
+#
+# Both targets are in development mode: resource names get your user name as a prefix and schedules are
+# paused, so a deploy never starts anything on its own.
 bundle:
   name: electricity_pulse
 
@@ -14,11 +23,19 @@ include:
   - resources/*.yml
 
 variables:
+  catalog:
+    description: The catalog holding the bronze, silver and gold schemas
+    default: pulse
   landing_path:
-    description: The GCS landing zone the ingestion code writes to
-    default: gs://databricks_1/electricity_gen_by_fuel/landing
+    description: Where bronze reads the landing files
+    default: /Volumes/pulse/bronze/landing
 
 targets:
-  dev:
+  free:
     mode: development
     default: true
+
+  gcp:
+    mode: development
+    variables:
+      landing_path: gs://databricks_1/electricity_gen_by_fuel/landing

@@ -5,7 +5,8 @@
 # from it. Auto Loader tracks which files are loaded, so each file is loaded exactly once; the pipeline
 # keeps its checkpoints and schema history itself.
 #
-# Pipeline configuration: pulse.src_path (the src/ folder, for imports), pulse.landing (the landing zone).
+# Pipeline configuration: pulse.src_path (the src/ folder, for imports), pulse.catalog, and pulse.landing (the
+# GCS landing zone, or the volume tools/sync_landing.py copies it into; default: that volume).
 import sys
 
 sys.path.append(spark.conf.get('pulse.src_path'))  # noqa: F821 (spark is provided by the pipeline)
@@ -13,10 +14,11 @@ sys.path.append(spark.conf.get('pulse.src_path'))  # noqa: F821 (spark is provid
 from pyspark.sql import functions as F  # noqa: E402
 
 from pulse import pipeline_api as dp  # noqa: E402
-from pulse.settings import (BATCH_HINTS, BRONZE_DESCRIPTIONS, BRONZE_TABLES, KAFKA_HINTS, KAFKA_TABLE,  # noqa: E402
-                            LANDING_DEFAULT)
+from pulse.settings import (BATCH_HINTS, BRONZE_DESCRIPTIONS, BRONZE_TABLES, CATALOG_DEFAULT,  # noqa: E402
+                            KAFKA_HINTS, KAFKA_TABLE, landing_volume)
 
-LANDING = spark.conf.get('pulse.landing', LANDING_DEFAULT)  # noqa: F821
+CATALOG = spark.conf.get('pulse.catalog', CATALOG_DEFAULT)  # noqa: F821
+LANDING = spark.conf.get('pulse.landing', None) or landing_volume(CATALOG)  # noqa: F821
 
 # Observed, never enforced: bronze keeps bad rows so silver can report them
 COMMON_EXPECTATIONS = {'no_rescued_data': '_rescued_data IS NULL', 'has_raw_value': 'raw_value IS NOT NULL'}

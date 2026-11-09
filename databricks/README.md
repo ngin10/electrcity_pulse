@@ -6,6 +6,7 @@ predicting the GB renewable share.
 
 ```
 gs://.../landing/<15 folders>                      written by consumer/ and batch_ingest/ (repo root)
+        │  (Free Edition: tools/sync_landing.py copies new files into a volume first)
         │  Auto Loader, exactly once per file
         ▼
 pulse.bronze.<15 tables>        raw, append-only, + source_file, loaded_at          pipelines/bronze.py
@@ -36,7 +37,8 @@ notebooks/pipeline_health.py    fails the job on missing files, rejections, gaps
 | 6 | [src/pulse/gold.py](src/pulse/gold.py) | Shares, completeness, and how every feature avoids looking past the cutoff |
 | 7 | [src/pipelines/gold.py](src/pipelines/gold.py) | The gold materialized views |
 | 8 | [src/notebooks/pipeline_health.py](src/notebooks/pipeline_health.py) | What fails the daily job |
-| 9 | [tests/](tests/) | Each rule shown on a real response; the gold leakage rules on small tables |
+| 9 | [tools/sync_landing.py](tools/sync_landing.py) | Free Edition only: copying new landing files into the volume, never overwriting |
+| 10 | [tests/](tests/) | Each rule shown on a real response; the gold leakage rules on small tables |
 
 The pipeline files only declare tables. All the logic is plain DataFrame functions in `src/pulse/`, so it runs
 and is tested on a laptop.
@@ -80,25 +82,61 @@ and is tested on a laptop.
 
 ## Deploying
 
-Once only, in this order:
-1. **Storage credential and catalog.** Create the credential in the UI, then run
-   [src/setup/00_setup.sql](src/setup/00_setup.sql) (steps at its top).
-2. **Pipelines and job**, with the Databricks CLI, from this folder:
+The same code runs two ways; only where bronze reads the landing files differs.
+
+| | **Free Edition** (default, `free` target) | **Databricks on Google Cloud** (`gcp` target) |
+|---|---|---|
+| Cost | Nothing at all, no time limit | 14-day trial, then pay-as-you-go; GCS storage |
+| Landing zone | `data/landing` on your machine (the ingestion code's default); GCS optional | The GCS bucket |
+| Bronze reads | A volume, `/Volumes/pulse/bronze/landing`, which `tools/sync_landing.py` fills | The GCS landing zone directly, through a Unity Catalog external location |
+| One-time setup | [00_setup_free.sql](src/setup/00_setup_free.sql) | [00_setup_gcp.sql](src/setup/00_setup_gcp.sql): storage credential with a read-only service account |
+
+Reading GCS directly is the production design: no copy, and the writer (create-only) and reader (read-only)
+are separate identities. The free target keeps the whole pipeline at zero cost instead: ingestion lands on
+your machine (leave `LANDING_PATH` unset), and one copy step uploads the new files to Databricks.
+
+### Free Edition
+
+Once only:
+1. Sign up for Databricks Free Edition, then in the workspace run
+   [src/setup/00_setup_free.sql](src/setup/00_setup_free.sql). It creates the catalog, the three schemas and
+   the landing volume. If it can't create the catalog, it says how to use the built-in `workspace` one.
+2. On your machine, install the tools and sign in:
    ```
+   winget install Databricks.DatabricksCLI        # the new CLI; `pip install databricks-cli` is the old one, without bundles
+   pip install -r databricks/tools/requirements.txt
    databricks auth login --host https://<your-workspace-url>
+   ```
+3. Deploy the pipelines and job, from this folder:
+   ```
    databricks bundle validate
    databricks bundle deploy
-   databricks bundle run pulse_daily
    ```
    This creates `pulse_bronze`, `pulse_silver` and `pulse_gold` (serverless, triggered) and the `pulse_daily`
-   job: bronze → silver → gold → health, every day at 07:00 UK time.
+   job: bronze → silver → gold → health, daily at 07:00 UK time.
 
-**Without the CLI:** add the repo as a Git folder in the workspace. Create three ETL pipelines, each with one
-source file from `src/pipelines/`, catalog `pulse`, and schema `bronze`, `silver` or `gold`. Give each these
-configuration settings:
+Each run, from the repo root, after the ingestion code has landed new files in `data/landing`:
+```
+python databricks/tools/sync_landing.py          # copies only files the volume doesn't have yet
+cd databricks; databricks bundle run pulse_daily # or let the 07:00 schedule run it
+```
+The first sync copies all of the landing zone, about 200 MB; later ones copy only the day's new files.
+`--dry-run` lists what would be copied without copying; `--source gs://...` copies from a bucket instead.
+
+### Databricks on Google Cloud
+
+Create the storage credential in the UI and run [src/setup/00_setup_gcp.sql](src/setup/00_setup_gcp.sql)
+(steps at its top), then `databricks bundle deploy -t gcp`. There's no sync step: bronze reads `gs://` itself.
+
+### Without the CLI
+
+Add the repo as a Git folder in the workspace. Create three ETL pipelines, each with one source file from
+`src/pipelines/`, catalog `pulse`, and schema `bronze`, `silver` or `gold`. Give each these configuration
+settings:
 - `pulse.src_path`: the Git folder's `databricks/src` path;
+- `pulse.catalog`: `pulse` (or `workspace`);
 - `spark.sql.session.timeZone`: `UTC`;
-- `pulse.landing`: the landing path (bronze only).
+- `pulse.landing`: the landing path (bronze only); left out, it's the catalog's landing volume.
 
 **Full refresh.** After changing a silver rule, full-refresh `pulse_silver`; it rebuilds from bronze, and
 previously rejected rows come back if they now pass. Full-refreshing bronze reloads every landing file, which

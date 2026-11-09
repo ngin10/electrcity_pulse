@@ -1,6 +1,8 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # One-time setup: access to the landing zone, and the catalog
+-- MAGIC # One-time setup on Databricks on Google Cloud: access to the landing zone, and the catalog
+-- MAGIC
+-- MAGIC For the `gcp` bundle target. On Databricks Free Edition, run `00_setup_free.sql` instead.
 -- MAGIC
 -- MAGIC Run once, top to bottom, in a SQL warehouse or a notebook attached to one.
 -- MAGIC

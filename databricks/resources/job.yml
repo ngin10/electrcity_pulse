@@ -1,4 +1,5 @@
-# The daily run: bronze -> silver -> gold -> health, after the ingestion code has landed the day's files.
+# The daily run: bronze -> silver -> gold -> health, after the ingestion code has landed the day's files
+# (and, on Free Edition, after tools/sync_landing.py has copied them into the volume).
 resources:
   jobs:
     pulse_daily:
@@ -33,3 +34,6 @@ resources:
             - task_key: gold
           notebook_task:
             notebook_path: ../src/notebooks/pipeline_health.py
+            base_parameters:
+              catalog: ${var.catalog}
+              landing_path: ${var.landing_path}
