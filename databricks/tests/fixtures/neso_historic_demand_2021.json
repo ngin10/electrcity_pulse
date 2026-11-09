@@ -1,0 +1,59 @@
+{
+ "help": "https://api.neso.energy/api/3/action/help_show?name=datastore_search_sql",
+ "success": true,
+ "result": {
+  "records": [
+   {
+    "IFA_FLOW": 51,
+    "TSD": 22641,
+    "VIKING_FLOW": 0,
+    "GREENLINK_FLOW": 0,
+    "IFA2_FLOW": -4,
+    "EMBEDDED_WIND_GENERATION": 3364,
+    "ND": 20538,
+    "MOYLE_FLOW": 82,
+    "NEMO_FLOW": 576,
+    "ELECLINK_FLOW": 0,
+    "PUMP_STORAGE_PUMPING": 1500,
+    "EMBEDDED_WIND_CAPACITY": 6527,
+    "SETTLEMENT_DATE": "01-NOV-2021",
+    "ENGLAND_WALES_DEMAND": 18688,
+    "EMBEDDED_SOLAR_CAPACITY": 13910,
+    "NON_BM_STOR": 0,
+    "_full_text": "'-2021':3 '-4':15 '0':10,12,18,21,22,23 '01':1 '1':4 '13910':11 '1500':13 '18688':7 '20538':5 '22641':6 '3364':8 '354':16 '51':14 '576':19 '6527':9 '693':20 '82':17 'nov':2",
+    "SETTLEMENT_PERIOD": 1,
+    "EAST_WEST_FLOW": 0,
+    "NSL_FLOW": 693,
+    "BRITNED_FLOW": 354,
+    "_id": 14593,
+    "EMBEDDED_SOLAR_GENERATION": 0
+   },
+   {
+    "IFA_FLOW": 16,
+    "TSD": 22799,
+    "VIKING_FLOW": 0,
+    "GREENLINK_FLOW": 0,
+    "IFA2_FLOW": 11,
+    "EMBEDDED_WIND_GENERATION": 3314,
+    "ND": 20724,
+    "MOYLE_FLOW": 71,
+    "NEMO_FLOW": 573,
+    "ELECLINK_FLOW": 0,
+    "PUMP_STORAGE_PUMPING": 1476,
+    "EMBEDDED_WIND_CAPACITY": 6527,
+    "SETTLEMENT_DATE": "01-NOV-2021",
+    "ENGLAND_WALES_DEMAND": 18919,
+    "EMBEDDED_SOLAR_CAPACITY": 13910,
+    "NON_BM_STOR": 0,
+    "_full_text": "'-2021':3 '0':10,12,18,21,22,23 '01':1 '11':15 '13910':11 '1476':13 '16':14 '18919':7 '2':4 '20724':5 '22799':6 '3314':8 '360':16 '573':19 '6527':9 '673':20 '71':17 'nov':2",
+    "SETTLEMENT_PERIOD": 2,
+    "EAST_WEST_FLOW": 0,
+    "NSL_FLOW": 673,
+    "BRITNED_FLOW": 360,
+    "_id": 14594,
+    "EMBEDDED_SOLAR_GENERATION": 0
+   }
+  ],
+  "sql": "SELECT * FROM \"18c69c42-f20d-46f0-84e9-e279045befc6\" WHERE (CASE length(\"SETTLEMENT_DATE\"::text) WHEN 9 THEN to_date(\"SETTLEMENT_DATE\"::text, 'DD-Mon-YY') WHEN 11 THEN to_date(\"SETTLEMENT_DATE\"::text, 'DD-Mon-YYYY') ELSE \"SETTLEMENT_DATE\"::text::date END) BETWEEN '2021-11-01' AND '2021-11-01' ORDER BY \"_id\""
+ }
+}

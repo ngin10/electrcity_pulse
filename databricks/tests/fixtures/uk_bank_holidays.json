@@ -1,0 +1,53 @@
+{
+ "england-and-wales": {
+  "division": "england-and-wales",
+  "events": [
+   {
+    "title": "New Year’s Day",
+    "date": "2019-01-01",
+    "notes": "",
+    "bunting": true
+   },
+   {
+    "title": "Good Friday",
+    "date": "2019-04-19",
+    "notes": "",
+    "bunting": false
+   }
+  ]
+ },
+ "scotland": {
+  "division": "scotland",
+  "events": [
+   {
+    "title": "New Year’s Day",
+    "date": "2019-01-01",
+    "notes": "",
+    "bunting": true
+   },
+   {
+    "title": "2nd January",
+    "date": "2019-01-02",
+    "notes": "",
+    "bunting": true
+   }
+  ]
+ },
+ "northern-ireland": {
+  "division": "northern-ireland",
+  "events": [
+   {
+    "title": "New Year’s Day",
+    "date": "2019-01-01",
+    "notes": "",
+    "bunting": true
+   },
+   {
+    "title": "St Patrick’s Day",
+    "date": "2019-03-18",
+    "notes": "Substitute day",
+    "bunting": true
+   }
+  ]
+ }
+}

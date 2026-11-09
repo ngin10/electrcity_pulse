@@ -1,0 +1,24 @@
+# Databricks Asset Bundle: deploys the three pipelines and the daily job from this folder.
+#
+#   databricks auth login --host https://<your-workspace-url>
+#   databricks bundle validate
+#   databricks bundle deploy          # uploads src/ and creates or updates the pipelines and job
+#   databricks bundle run pulse_daily # runs bronze -> silver -> gold -> health once
+#
+# The dev target (the default) prefixes resource names with your user name and pauses schedules, so a
+# deploy can't start anything on its own.
+bundle:
+  name: electricity_pulse
+
+include:
+  - resources/*.yml
+
+variables:
+  landing_path:
+    description: The GCS landing zone the ingestion code writes to
+    default: gs://databricks_1/electricity_gen_by_fuel/landing
+
+targets:
+  dev:
+    mode: development
+    default: true
