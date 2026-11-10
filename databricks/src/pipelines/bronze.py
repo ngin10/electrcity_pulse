@@ -1,4 +1,5 @@
-# Bronze pipeline: the GCS landing zone -> one raw, append-only Delta table per landing folder.
+# Bronze pipeline: the landing files (a Unity Catalog volume on Free Edition, or the GCS landing zone itself)
+# -> one raw, append-only Delta table per landing folder.
 #
 # Bronze keeps every row exactly as landed, duplicates included, plus where it came from (source_file) and
 # when Databricks loaded it (loaded_at). It parses nothing and drops nothing: silver can always be rebuilt
