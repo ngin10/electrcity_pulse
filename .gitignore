@@ -231,3 +231,7 @@ state/batch/
 
 # Databricks bundle deploy state
 .databricks/
+
+# EDA: generated tables, models and the report (rebuilt by the eda/ scripts), and the SQL practice samples
+eda/out/
+eda/practice/*.csv
