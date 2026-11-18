@@ -21,6 +21,12 @@ pulse.silver.completeness       periods present vs expected, per day
 pulse.gold.grid_half_hourly     generation, demand, prices, carbon per period        pipelines/gold.py
 pulse.gold.generation_daily     energy by category, renewable share (the target)     pulse/gold.py
 pulse.gold.features_day_ahead   features known at 18:00 UTC the day before + target
+        │
+        │  (from silver, beside gold) the versioned feature store      notebooks/feature_store.py
+        ▼
+pulse.gold.feature_store_day_ahead   131 day-ahead features + target, Delta-versioned for a year
+pulse.ml.feature_catalogue      what each feature means, its source and leakage rule
+pulse.ml.features_served / predictions / explanations   filled by the scoring job (not built yet)
         ▼
 notebooks/pipeline_health.py    fails the job on missing files, rejections, gaps
 ```
@@ -36,9 +42,11 @@ notebooks/pipeline_health.py    fails the job on missing files, rejections, gaps
 | 5 | [src/pipelines/silver.py](src/pipelines/silver.py) | How each source becomes views, a rejected flow and AUTO CDC tables |
 | 6 | [src/pulse/gold.py](src/pulse/gold.py) | Shares, completeness, and how every feature avoids looking past the cutoff |
 | 7 | [src/pipelines/gold.py](src/pipelines/gold.py) | The gold materialized views |
-| 8 | [src/notebooks/pipeline_health.py](src/notebooks/pipeline_health.py) | What fails the daily job |
-| 9 | [tools/sync_landing.py](tools/sync_landing.py) | Free Edition only: copying new landing files into the volume, never overwriting |
-| 10 | [tests/](tests/) | Each rule shown on a real response; the gold leakage rules on small tables |
+| 8 | [src/pulse/feature_store.py](src/pulse/feature_store.py) | The 131 day-ahead features and their leakage rules (`availability`) |
+| 9 | [src/notebooks/feature_store.py](src/notebooks/feature_store.py) | How the feature store is versioned: change-only writes, catalogue, retention |
+| 10 | [src/notebooks/pipeline_health.py](src/notebooks/pipeline_health.py) | What fails the daily job |
+| 11 | [tools/sync_landing.py](tools/sync_landing.py) | Free Edition only: copying new landing files into the volume, never overwriting |
+| 12 | [tests/](tests/) | Each rule shown on a real response; the gold leakage rules on small tables |
 
 The pipeline files only declare tables. All the logic is plain DataFrame functions in `src/pulse/`, so it runs
 and is tested on a laptop.
@@ -79,6 +87,37 @@ and is tested on a laptop.
   - actuals only from periods that had ended;
   - the calendar.
 - `is_trainable` marks complete days with all the key features.
+
+## The feature store
+
+The 131 day-ahead features from the EDA, built daily from silver and kept with their history. The logic is
+[src/pulse/feature_store.py](src/pulse/feature_store.py): plain pandas, shared with `eda/features.py`, so the EDA and
+the job compute exactly the same values. The job task is [src/notebooks/feature_store.py](src/notebooks/feature_store.py).
+
+| Table | Holds | Key |
+|---|---|---|
+| `gold.feature_store_day_ahead` | One row per target day: the features, the target, and which logic and commit produced it | `target_date` |
+| `ml.feature_catalogue` | One row per feature: definition, source table, when it is known, the version that added it | `feature` |
+| `ml.features_served` | Append-only: the exact feature row behind each prediction | none, never updated |
+| `ml.predictions` | Each prediction with its 80% interval and model version | `target_date`, `model_name`, `model_version` |
+| `ml.explanations` | Each prediction's feature contributions (SHAP) | as above, plus `feature` |
+
+The last three are created empty; the scoring job will fill them once models are tracked in MLflow.
+
+**Versioning, at three levels.**
+- *Logic:* `FEATURE_SET_VERSION` in `feature_store.py`, bumped whenever a definition changes, and the Git commit
+  (`code_version`), both stored on every row.
+- *Data:* every write is a Delta version, kept for 365 days (`delta.logRetentionDuration` and
+  `delta.deletedFileRetentionDuration`). A rerun only rewrites days whose values changed, compared by a hash of the row,
+  so the history records real changes.
+- *Model to features:* each model will record the feature table's Delta version and its feature list.
+
+**Rolling back.** `DESCRIBE HISTORY` lists the versions; `SELECT ... VERSION AS OF n` reads one;
+`RESTORE TABLE ... TO VERSION AS OF n` returns to it (as a new, undoable version). To roll back the logic, revert the
+commit, bump `FEATURE_SET_VERSION` and rerun.
+
+The original 8-feature `gold.features_day_ahead` materialized view is unchanged; materialized views are recomputed on
+every update and can't be time-travelled, which is why the store is a separate, job-written Delta table.
 
 ## Deploying
 

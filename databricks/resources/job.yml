@@ -1,4 +1,4 @@
-# The daily run: bronze -> silver -> gold -> health, after the ingestion code has landed the day's files
+# The daily run: bronze -> silver -> gold and the feature store -> health, after the ingestion code has landed the day's files
 # (and, on Free Edition, after tools/sync_landing.py has copied them into the volume).
 resources:
   jobs:
@@ -29,9 +29,22 @@ resources:
           pipeline_task:
             pipeline_id: ${resources.pipelines.pulse_gold.id}
 
+        # The versioned feature store (gold.feature_store_day_ahead and the ml schema). It reads silver, so it
+        # runs beside gold rather than after it
+        - task_key: feature_store
+          depends_on:
+            - task_key: silver
+          notebook_task:
+            notebook_path: ../src/notebooks/feature_store.py
+            base_parameters:
+              catalog: ${var.catalog}
+              # Recorded on every row it writes, so a row can be traced to the code that produced it
+              code_version: ${bundle.git.commit}
+
         - task_key: health
           depends_on:
             - task_key: gold
+            - task_key: feature_store
           notebook_task:
             notebook_path: ../src/notebooks/pipeline_health.py
             base_parameters:
