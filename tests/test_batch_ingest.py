@@ -136,6 +136,18 @@ def test_weather_requests_all_points_at_once():
     assert 'wind_speed_100m' in stitched.params['hourly'].split(',')
 
 
+def test_national_gas_prices_request():
+    [request] = SOURCES['national_gas_prices'].build(None, date(2026, 11, 1), date(2026, 11, 30))
+    assert request == Request('https://data.nationalgas.com/api/find-gas-data-download', {
+        'applicableFor': 'Y', 'dateFrom': '2026-11-01', 'dateTo': '2026-11-30', 'dateType': 'GASDAY',
+        'latestFlag': 'Y', 'ids': 'PUBOB603,PUBOB604,PUBOB605', 'type': 'CSV'})
+
+
+def test_national_gas_backfill_starts_where_the_api_does():
+    start, _ = compute_range(SOURCES['national_gas_prices'], None, date(2026, 11, 17), date(2019, 1, 1), 7)
+    assert start == date(2021, 11, 15)
+
+
 def test_neso_resource_ids_by_year():
     assert neso_resource_ids(FakeSession()) == {2025: 'res-2025', 2026: 'res-2026'}
 

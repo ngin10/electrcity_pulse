@@ -188,6 +188,20 @@ def _neso_demand(session, start, end):
     return requests
 
 
+NATIONAL_GAS = 'https://data.nationalgas.com/api'
+# Daily GB gas prices in p/kWh, set by trades on the On-the-day Commodity Market: the System Average Price
+# (SAP, the spot benchmark) and the two imbalance prices, System Marginal Price buy and sell
+NATIONAL_GAS_PRICE_ITEMS = ('PUBOB603', 'PUBOB604', 'PUBOB605')
+
+
+def _national_gas_prices(session, start, end):
+    # Gas days, both ends included. The download answers in CSV only (type=JSON comes back empty), so this
+    # source lands CSV text. latestFlag=Y: the latest published value of each gas day
+    return [Request(f'{NATIONAL_GAS}/find-gas-data-download', {
+        'applicableFor': 'Y', 'dateFrom': start.isoformat(), 'dateTo': end.isoformat(), 'dateType': 'GASDAY',
+        'latestFlag': 'Y', 'ids': ','.join(NATIONAL_GAS_PRICE_ITEMS), 'type': 'CSV'})]
+
+
 # --- The registry: every source the runner fetches, by name ------------------------------------------------
 # To add a source: write a build function above and add one line here.
 
@@ -227,4 +241,8 @@ SOURCES = {source.name: source for source in [
     Source('weather_historical_forecast', 'Open-Meteo historical short-range weather forecasts, same points',
            chunk_days=31, revision_days=2, earliest=date(2021, 1, 1),
            build=_open_meteo('https://historical-forecast-api.open-meteo.com/v1/forecast', WEATHER_VARIABLES)),
+    # The API serves nothing before 15 November 2021 (checked live). Each gas day is republished daily for
+    # about a week, so that week is re-fetched. A year fits in one request; a month keeps responses small
+    Source('national_gas_prices', 'National Gas daily gas prices: System Average Price and marginal buy and sell',
+           chunk_days=31, revision_days=7, earliest=date(2021, 11, 15), build=_national_gas_prices),
 ]}
