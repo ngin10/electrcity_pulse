@@ -17,7 +17,7 @@ fires, so every required field gets a missing_* rule, and value rules only judge
 """
 from dataclasses import dataclass, field
 
-from pyspark.sql import DataFrame, functions as F
+from pyspark.sql import functions as F
 
 from pulse.settings import UK_TZ
 

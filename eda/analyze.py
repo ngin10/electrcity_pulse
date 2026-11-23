@@ -1302,7 +1302,7 @@ def weather(table_name, title, source, other=None):
     if other is not None:
         # Day-ahead forecast against the stitched short-range forecast (close to what happened)
         rows, mae_by_place = [], {}
-        for v, (label, unit) in VARS.items():
+        for v, (label, _unit) in VARS.items():
             for place in places:
                 e = error_stats(wide[v][place], other[v][place].reindex(wide[v].index))
                 rows.append([label, place, f"{e['n']:,}", e['bias'], e['mae'], e['rmse'], e['r']])

@@ -160,6 +160,23 @@ checkpoints), the consumer (landing rows, fixed file schema, append-only storage
 offset commits) and batch ingest (each source's requests and API limits, NESO's per-year tables, backfill
 ranges, checkpoints that only advance after a window is stored).
 
+### Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request:
+
+| Job | What it checks |
+|---|---|
+| Lint | Ruff (pyflakes, pycodestyle, bugbear; settings in `pyproject.toml`); the workflow and Dependabot files against GitHub's schemas |
+| Unit tests | `tests/`: ingestion, consumer, feature store |
+| Spark tests | `databricks/tests/`: bronze, silver and gold on a local PySpark with Java 17 |
+| Model tests | `eda/tests/`: every linear and tree model, the ensemble, the champion's interval, and an MLflow save-and-load round trip, on the pinned versions the models were pickled with |
+| Coverage | Unit and Spark coverage combined; fails below a floor that only goes up |
+| Security | Bandit, pip-audit on every requirements file, gitleaks over the whole history |
+| Bundle | `databricks bundle validate`, once `DATABRICKS_HOST` and `DATABRICKS_TOKEN` are repository secrets |
+| CI passed | Succeeds only if all of the above did: the one check for branch protection to require |
+
+Dependabot proposes dependency and action updates weekly. `pre-commit install` runs the fast checks on each commit.
+
 ## What I'd do next
 
 - Check at startup that the consumer can write to the bucket, so a bad key fails immediately.
