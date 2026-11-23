@@ -74,6 +74,12 @@ sens['day-ahead weather missing'] = {'mean_change': round(moved.mean(), 3), 'mea
                                      'mae_in_sample_with_weather': round((actual26 - base).abs().mean(), 3),
                                      'mae_in_sample_without_weather': round((actual26 - base - moved).abs().mean(), 3)}
 out['sensitivity'] = sens
+# How much wider the 80% interval must be on a day without weather: the ratio of the 80th percentiles of |error|
+# without and with weather, on the same 2026 days. Both are in sample, so the ratio (not either level) is used: the
+# scoring job multiplies the out-of-sample conformal half-width by it for days flagged weather_missing
+q80_with, q80_without = (actual26 - base).abs().quantile(0.8), (actual26 - base - moved).abs().quantile(0.8)
+out['weather_missing_interval'] = {'q80_abs_error_with_weather': round(q80_with, 3), 'q80_abs_error_without_weather': round(q80_without, 3),
+                                   'widening_factor': round(q80_without / q80_with, 3)}
 
 # Monotonic sanity: does more forecast wind (all else equal) ever lower the prediction?
 grid = np.linspace(X26['fc_wind_share_of_demand'].quantile(0.05), X26['fc_wind_share_of_demand'].quantile(0.95), 25)

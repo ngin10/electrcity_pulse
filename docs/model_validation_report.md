@@ -158,7 +158,7 @@ Measured on the packaged model over the 2026 days.
 
 - **Directions are sensible:** more wind raises the prediction, and more demand lowers it.
 - **Changing one feature moves the prediction only a little.** The wind signal is spread across many correlated features, so a change has to come through all of them (see "all wind forecasts +10%").
-- **Missing weather matters a lot.** In-sample on 2026, MAE rises from 1.61 to 3.18 when the weather features are removed. The scoring job does not yet check for this: on 7 November 2026 it scored a day without weather.
+- **Missing weather matters a lot.** In-sample on 2026, MAE rises from 1.61 to 3.18 when the weather features are removed (80th percentile of |error|: 2.72 to 5.20). On 7 November 2026 the scoring job scored a day without weather; it now flags such days and widens their interval (section 9, item 3).
 - **Monotonicity:** the prediction rises by 5.4 points on average as forecast wind ÷ demand goes from 17% to 90%, all else fixed. Small local dips (at most 0.19 points) come from LightGBM's step-shaped response. They're too small to matter, but they mean the response isn't strictly monotonic.
 
 ## 8. Explainability
@@ -188,7 +188,7 @@ The model rests mainly on the day-ahead forecasts and weather, as it should for 
 |---|---|---|---|
 | 1 | Interval misses cluster | Runs of days outside the interval | Don't read the interval as independent day by day. Monitor coverage on a rolling 30 days. A point model that uses its recent errors (tested: MAE 3.28) would reduce it. |
 | 2 | Very windy days under-predicted (+3.1 points above 65%) | Systematic under-estimate on the highest days | Report as a known bias. Consider a correction by level. |
-| 3 | Weather missing roughly doubles error | Poor predictions on days with missing weather | **Required before relying on the job:** the scoring job must flag or hold days without day-ahead weather |
+| 3 | Weather missing roughly doubles error | Poor predictions on days with missing weather | **Done:** such days are flagged `weather_missing` in `ml.predictions`, their interval is widened 1.91× (the ratio of the 80th percentiles of |error| without and with weather, 5.20 ÷ 2.72, on 2026), and monitoring grades their accuracy separately |
 | 4 | Assumed publication times for 6 tables | Possible leakage if real publication is later | Confirm against the live feeds |
 | 5 | Concept drift: the wind-to-share slope fell 13% from 2024 to 2026 | Accuracy decays without retraining | Retrain monthly, as evaluated |
 | 6 | Short history: 674 out-of-sample days, about two weather years | Rare conditions (long calm spells, extreme cold) are barely represented | Re-validate after a further year |
@@ -198,14 +198,21 @@ The model rests mainly on the day-ahead forecasts and weather, as it should for 
 
 ## 10. Ongoing monitoring
 
-| Check | Frequency | Threshold | Action |
+Implemented in `databricks/src/notebooks/monitor_day_ahead.py`, a task after scoring in `pulse_day_ahead_scoring`; the rules are in `databricks/src/pulse/monitoring.py`, unit-tested in `tests/test_monitoring.py`. Results go to `pulse.ml.monitoring`, one row per check, subject and metric, graded `ok` / `warn` / `alert`. Monitoring records only and never fails the job; acting on an alert is a person's decision.
+
+| Check | Frequency | Warn / alert | Action |
 |---|---|---|---|
-| Input completeness: day-ahead forecasts and weather present | Each scoring run | Any key input missing | Hold or flag the prediction |
-| Rolling 30-day MAE | Daily, once actuals arrive | Above 4.5 (beyond the worst month so far) | Investigate; consider early retraining |
-| Rolling 30-day bias | Daily | Beyond ±2 points | Investigate drift |
-| Rolling 30-day interval coverage | Daily | Outside 65–92% | Recalibrate |
-| Feature drift (PSI against the same months a year earlier, top 20 features) | Weekly | PSI above 0.25 on an important feature | Investigate the source |
-| Source health (AGWS ÷ FUELHH wind; NESO ÷ INDO demand) | Daily | Outside the normal band | Quarantine the source |
+| Input completeness: day-ahead weather present | Each scoring run | Flag `weather_partial` / `weather_missing` | Score anyway; widen the interval 1.91× on `weather_missing` |
+| Rolling 30-day MAE, overall and per data-quality flag | Daily, once actuals arrive | 4.0 / 4.5 (beyond the worst month so far) | Investigate; consider early retraining |
+| Rolling 30-day bias | Daily | ±1.5 / ±2 points | Investigate drift |
+| Rolling 30-day interval coverage | Daily | Outside 70–90% / 65–92%; Kupiec p below 0.10 / 0.05 | Recalibrate |
+| Feature drift: PSI and KS, last 30 served days against the same time of year (±15 days) in the year before registration; calendar and holiday features excluded | Daily | 95th / 99th percentile of the statistic for 30 days from that season by chance (7-day block bootstrap); PSI never below 0.10 / 0.25 | Investigate the source; drift alone is not a reason to retrain |
+| Prediction drift: the same, for the predictions | Daily | As for features | Investigate |
+| Freshness: share of each source's features present at the cutoff on the latest day | Daily | Below 90% / 50% of its usual share | Check ingestion |
+
+**Change from the original plan.** The plan graded drift with a fixed PSI threshold of 0.25 against the whole training year. A dry run on October 2026 showed why that fails. Against the whole year, 92 feature checks alerted: day of year, daylight and a month of weather differ from an annual mix by construction. And 30 days are too few for the fixed threshold: on 10 bins, PSI averages about 0.3 from sampling alone. Consecutive days are also alike, which makes that noise larger still. With the season-matched reference and block-bootstrap thresholds, 17 of 118 features alerted on both statistics, each for a real reason: embedded solar capacity grew (22.0 to 24.0 GW), nuclear returned from outages (3.5 to 4.7 GW), the APX price roughly doubled (£83 to £157), and the outage notices changed. Prediction drift and accuracy were unaffected. The false-alarm rate is a few per cent per feature rather than 1%, because resampling the reference leaves out its own sampling error, so drift is read as a pattern across features.
+
+Source-health ratios (AGWS ÷ FUELHH wind; NESO ÷ INDO demand), in the original plan, are not yet implemented.
 
 ## 11. Reproducibility
 

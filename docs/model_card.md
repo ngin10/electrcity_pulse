@@ -42,7 +42,7 @@ The 80% interval covers 78.2% of days, which is statistically consistent with 80
 
 - **Interval misses come in runs.** It's right about 80% of the time overall, but turbulent weeks can see several misses in a row.
 - **Very windy days are under-predicted,** by about 3 points above 65% renewable share.
-- **Missing day-ahead weather roughly doubles the error.** The scoring job doesn't yet hold such days back.
+- **Missing day-ahead weather roughly doubles the error.** Such days are still scored but flagged `weather_missing`, and their interval is widened 1.91× (to about ±10.3 points), the ratio of the 80th percentiles of absolute error without and with weather.
 - **Six sources have assumed publication times,** not observed ones.
 - **About two years of history,** so rare weather is barely represented.
 - **The definition matters:** the target excludes solar, so it isn't the "renewable share" usually quoted in the news.
@@ -52,11 +52,24 @@ The 80% interval covers 78.2% of days, which is statistically consistent with 80
 - **Schedule:** the job `pulse_day_ahead_scoring` runs at 18:45 UTC, after refreshing the features.
 - **Which days:** every day after the last day with a known outcome that this model version hasn't already scored.
 - **Outputs:**
-  - `pulse.ml.predictions`: the prediction and interval;
+  - `pulse.ml.predictions`: the prediction and interval, with a `data_quality` flag (`ok`, `weather_partial`, `weather_missing`);
   - `pulse.ml.features_served`: the exact inputs the model saw;
   - `pulse.ml.explanations`: each feature's contribution, which adds up exactly to the prediction.
 
-**Retraining:** monthly, with the interval recalibrated at the same time. A replacement becomes `@champion` only if it meets the selection rule in the validation report.
+## Monitoring
+
+After each scoring run, `monitor_day_ahead.py` writes `ok` / `warn` / `alert` results to `pulse.ml.monitoring` (rules in `databricks/src/pulse/monitoring.py`):
+
+| Check | Alert when |
+|---|---|
+| Accuracy, last 30 days with an outcome, overall and per `data_quality` | MAE above 4.5; \|bias\| above 2 points; coverage outside 65–92% or Kupiec p below 0.05 |
+| Feature drift, last 30 served days, against the same time of year (±15 days) before registration | PSI or KS beyond the 99th percentile of what 30 days from that season produce by chance (7-day block bootstrap) |
+| Prediction drift | the same, for the predictions |
+| Freshness | a source's features present at the cutoff fall below half their usual share |
+
+Monitoring records and never fails the job. Drift alone isn't a reason to retrain: in a dry run on October 2026, 17 features had drifted for real reasons (solar capacity growth, nuclear back from outages, prices doubling) while the predictions and accuracy were unaffected.
+
+**Retraining:** monthly, with the interval recalibrated at the same time, or sooner if the accuracy checks alert. A replacement becomes `@champion` only if it meets the selection rule in the validation report.
 
 ## Lineage and evidence
 

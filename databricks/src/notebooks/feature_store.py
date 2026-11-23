@@ -12,6 +12,7 @@
 # MAGIC | `ml.features_served` | Append-only: the exact feature row behind each prediction. Filled by the scoring job. |
 # MAGIC | `ml.predictions` | Each prediction and its 80% interval, with the model version. Filled by the scoring job. |
 # MAGIC | `ml.explanations` | Each prediction's feature contributions (SHAP). Filled by the scoring job. |
+# MAGIC | `ml.monitoring` | Daily accuracy, drift and freshness checks. Filled by the monitoring notebook. |
 # MAGIC
 # MAGIC **Versioning.** Every write is a Delta version, kept for a year. A rerun only rewrites days whose features changed
 # MAGIC (compared by a hash of the values), so the history shows real changes, not reruns. Each row also records the
@@ -148,8 +149,33 @@ CREATE TABLE IF NOT EXISTS {PREDICTIONS} (
   upper_80 DOUBLE COMMENT 'Upper end of the 80% prediction interval, %',
   feature_set_version STRING,
   predicted_at TIMESTAMP,
+  data_quality STRING COMMENT 'ok, weather_partial, or weather_missing (error about doubles; interval widened)',
   CONSTRAINT predictions_pk PRIMARY KEY (target_date, model_name, model_version)
 ) COMMENT 'One row per prediction' {RETENTION}""")
+# Added after the table was first created: add it to an existing table too
+if 'data_quality' not in spark.table(PREDICTIONS).columns:  # noqa: F821
+    sql(f"ALTER TABLE {PREDICTIONS} ADD COLUMNS (data_quality STRING COMMENT "
+        "'ok, weather_partial, or weather_missing (error about doubles; interval widened)')")
+
+sql(f"""
+CREATE TABLE IF NOT EXISTS {ML}.monitoring (
+  run_date DATE NOT NULL COMMENT 'The day the monitoring ran (UTC)',
+  model_name STRING NOT NULL,
+  model_version STRING NOT NULL,
+  check_name STRING NOT NULL COMMENT 'accuracy, feature_drift, prediction_drift or freshness',
+  subject STRING NOT NULL COMMENT 'What was checked: a segment (all, ok), a feature, predicted_share or a source table',
+  metric STRING NOT NULL COMMENT 'mae, bias, coverage_80, kupiec_p, psi, ks_p or share_present',
+  value DOUBLE,
+  warn_at DOUBLE COMMENT 'Threshold for warn (for p-values and shares, at or below it)',
+  alert_at DOUBLE COMMENT 'Threshold for alert',
+  status STRING COMMENT 'ok, warn, alert, info, insufficient_data or no_data',
+  n BIGINT COMMENT 'Days behind the value',
+  window_start DATE,
+  window_end DATE,
+  details STRING,
+  monitored_at TIMESTAMP,
+  CONSTRAINT monitoring_pk PRIMARY KEY (run_date, model_name, model_version, check_name, subject, metric)
+) COMMENT 'Daily model monitoring: one row per check, subject and metric. Records only; never fails a job.' {RETENTION}""")
 
 sql(f"""
 CREATE TABLE IF NOT EXISTS {EXPLANATIONS} (

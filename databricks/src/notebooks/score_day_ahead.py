@@ -8,6 +8,10 @@
 # MAGIC fact would flatter the monitoring. (An old day whose target is missing because its data is incomplete is not
 # MAGIC a future day, so it is skipped too.)
 # MAGIC
+# MAGIC **Readiness.** A day needs its day-ahead wind and demand forecasts to be scored at all. A day whose day-ahead
+# MAGIC weather is missing is still scored, but flagged `weather_missing` in `data_quality`, and its interval is widened
+# MAGIC (the error roughly doubles without weather). Monitoring tracks flagged days separately.
+# MAGIC
 # MAGIC | Table | Written |
 # MAGIC |---|---|
 # MAGIC | `ml.predictions` | The prediction and its 80% interval, with the model version (merged on day, model and version) |
@@ -38,11 +42,22 @@ dbutils.library.restartPython()  # noqa: F821
 # COMMAND ----------
 
 import json
+import os
+import sys
+
+sys.path.append(os.path.abspath('..'))  # src/, for the pulse package
 
 import pandas as pd
 import mlflow
 from mlflow.tracking import MlflowClient
 from pyspark.sql import functions as F
+
+from pulse.monitoring import weather_quality
+
+# Without the day-ahead weather the error roughly doubles. Such days are still scored, flagged weather_missing, and
+# their 80% interval is widened by this factor: the ratio of the 80th percentiles of |error| without and with
+# weather on the 2026 days (eda/validate_champion.py, weather_missing_interval; 5.20 / 2.72)
+WEATHER_MISSING_WIDENING = 1.913
 
 CATALOG = dbutils.widgets.get('catalog')  # noqa: F821
 ALIAS = dbutils.widgets.get('model_alias')  # noqa: F821
@@ -85,6 +100,16 @@ now = pd.Timestamp.now(tz='UTC').tz_localize(None)
 if len(ready):
     X = ready[inputs].astype(float)
     out = model.predict(X)
+    # Readiness: flag days with missing weather and widen their interval rather than hold them back
+    quality = weather_quality(X)
+    half_width = model.unwrap_python_model().half_width
+    widen = quality == 'weather_missing'
+    wide = half_width * WEATHER_MISSING_WIDENING
+    out.loc[widen, 'lower_80'] = (out.loc[widen, 'predicted_share'] - wide).clip(0, 100)
+    out.loc[widen, 'upper_80'] = (out.loc[widen, 'predicted_share'] + wide).clip(0, 100)
+    out['data_quality'] = quality
+    print(f'data quality: {quality.value_counts().to_dict()}'
+          + (f'; interval widened to +/-{wide:.2f} on {int(widen.sum())} day(s)' if widen.any() else ''))
 
     # Exact decomposition of the ensemble: 0.5 x linear terms + 0.5 x LightGBM SHAP values
     blend = model.unwrap_python_model().point_model
@@ -112,7 +137,7 @@ if len(ready):
                            # JSON text, turned into MAP<STRING, DOUBLE> by the INSERT below (a dict column would arrive as a struct)
                            'features_json': [json.dumps({k: float(v) for k, v in row.items() if pd.notna(v)}) for _, row in X.iterrows()],
                            'served_at': now})
-    print(predictions[['target_date', 'predicted_share', 'lower_80', 'upper_80']].round(2).to_string(index=False))
+    print(predictions[['target_date', 'predicted_share', 'lower_80', 'upper_80', 'data_quality']].round(2).to_string(index=False))
 
 # COMMAND ----------
 

@@ -40,3 +40,13 @@ resources:
             base_parameters:
               catalog: ${var.catalog}
               model_alias: champion
+
+        # Accuracy, drift and freshness checks into ml.monitoring. Records only: it never fails the job
+        - task_key: monitor
+          depends_on:
+            - task_key: score
+          notebook_task:
+            notebook_path: ../src/notebooks/monitor_day_ahead.py
+            base_parameters:
+              catalog: ${var.catalog}
+              model_alias: champion
