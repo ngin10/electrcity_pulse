@@ -1,4 +1,4 @@
-requests>=2.32
+requests>=2.34.2
 urllib3>=2.2
 confluent-kafka>=2.6
 tzdata>=2024.1
