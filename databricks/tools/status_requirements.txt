@@ -2,5 +2,5 @@
 databricks-sdk==0.163.0
 mlflow-skinny==3.18.0
 pandas==3.0.3
-numpy==2.4.6
+numpy==2.5.5
 matplotlib==3.11.0
