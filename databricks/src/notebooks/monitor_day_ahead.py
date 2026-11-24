@@ -133,7 +133,10 @@ summary = mon.summary(rows)
 for check, counts in summary.items():
     print(f'{check:17s} worst: {counts["worst"]:17s} {({k: v for k, v in counts.items() if k != "worst"})}')
 flagged = results[results['status'].isin(['warn', 'alert'])].sort_values(['status', 'check_name'])
-display(flagged[['check_name', 'subject', 'metric', 'value', 'warn_at', 'alert_at', 'status', 'n', 'details']])  # noqa: F821
+if flagged.empty:  # display() can't build a table from an empty frame
+    print('no warnings or alerts')
+else:
+    display(flagged[['check_name', 'subject', 'metric', 'value', 'warn_at', 'alert_at', 'status', 'n', 'details']])  # noqa: F821
 
 # COMMAND ----------
 

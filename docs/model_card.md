@@ -69,7 +69,7 @@ After each scoring run, `monitor_day_ahead.py` writes `ok` / `warn` / `alert` re
 
 Monitoring records and never fails the job. Drift alone isn't a reason to retrain: in a dry run on October 2026, 17 features had drifted for real reasons (solar capacity growth, nuclear back from outages, prices doubling) while the predictions and accuracy were unaffected.
 
-**Retraining:** monthly, with the interval recalibrated at the same time, or sooner if the accuracy checks alert. A replacement becomes `@champion` only if it meets the selection rule in the validation report.
+**Retraining:** monthly, by the `pulse_monthly_training` job, or sooner if the accuracy checks alert. It refits this model's own specification on the latest features and recalibrates the interval. It registers the result as `@challenger` only if it passes the retraining gate (validation report, section 10). A person promotes it with `pulse_promote_model`, and the replaced version is kept as `@previous_champion` for rollback. A new *design* still has to meet the full selection rule.
 
 ## Lineage and evidence
 

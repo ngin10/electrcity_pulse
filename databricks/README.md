@@ -35,6 +35,9 @@ pulse.ml.explanations           each feature's contribution, adding up to the pr
         ▼
 pulse.ml.monitoring             accuracy, drift and freshness checks, graded ok / warn / alert
 
+notebooks/train_day_ahead.py    monthly: refit the champion's specification, gate it, register @challenger
+notebooks/promote_model.py      by hand: @challenger -> @champion (old one kept as @previous_champion), or roll back
+
 notebooks/pipeline_health.py    fails the daily job on missing files, rejections, gaps
 ```
 
@@ -151,6 +154,37 @@ feature store → score → monitor.
 | Prediction drift | as for features, on the predictions |
 | Freshness | a source's features present at the cutoff fall below half their usual share |
 
+## Retraining and promotion
+
+`pulse_monthly_training` runs at 06:00 UTC on the 1st of each month
+([train_day_ahead.py](src/notebooks/train_day_ahead.py), logic in [pulse/training.py](src/pulse/training.py)):
+
+1. Clone the `@champion`'s specification (members, settings, model code), so only the data is new.
+2. Walk-forward from January 2025 with monthly refits; recalibrate the 80% interval on its errors.
+3. Fit on every day with a known outcome.
+4. Apply the gate. Every check must pass:
+
+| Check | Limit |
+|---|---|
+| Training days | at least 600 |
+| Walk-forward MAE since January 2025 | at most 3.54, the upper end of the validated 95% interval |
+| Walk-forward MAE, last 90 days | at most 4.5 |
+| \|Bias\|, last 90 days | at most 2 points |
+| Interval coverage (monthly conformal) | Kupiec p at least 0.05 |
+| Agreement with the champion, latest 60 days | mean \|difference\| at most 2 points, largest at most 8 |
+| Valid output | every prediction finite and within 0–100 |
+
+5. Log everything to MLflow, the gate included, and, if it passed, register the model as `@challenger` with its
+   training data's feature-table version and digest.
+
+Promotion is a person's decision: review the run, then run `pulse_promote_model`
+([promote_model.py](src/notebooks/promote_model.py)). It refuses versions that didn't pass the gate, moves the old
+champion to `@previous_champion`, and rolls back the same way. Set the job parameter `auto_promote` to `true` to
+skip the review.
+
+Dry run on the real data (November 2026): retraining reproduced the validated model exactly, with walk-forward MAE
+3.303, interval ±5.363 and identical predictions, and passed every check (coverage 78.1%, Kupiec p = 0.25).
+
 ## Deploying
 
 The same code runs two ways; only where bronze reads the landing files differs.
@@ -185,7 +219,8 @@ Once only:
    ```
    This creates `pulse_bronze`, `pulse_silver` and `pulse_gold` (serverless, triggered) and two jobs:
    `pulse_daily` (bronze → silver → gold and the feature store → health, daily at 07:00 UK time) and
-   `pulse_day_ahead_scoring` (bronze → silver → feature store → score → monitor, at 18:45 UTC).
+   `pulse_day_ahead_scoring` (bronze → silver → feature store → score → monitor, at 18:45 UTC), plus
+   `pulse_monthly_training` and `pulse_promote_model` (see above).
 
 Each run, from the repo root, after the ingestion code has landed new files in `data/landing`:
 ```

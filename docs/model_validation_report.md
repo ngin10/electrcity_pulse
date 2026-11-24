@@ -214,6 +214,24 @@ Implemented in `databricks/src/notebooks/monitor_day_ahead.py`, a task after sco
 
 Source-health ratios (AGWS ÷ FUELHH wind; NESO ÷ INDO demand), in the original plan, are not yet implemented.
 
+### Retraining gate
+
+Monthly retraining refits this model's own specification on the latest feature store. The specification is cloned from the registered champion, so the members, settings and code are unchanged. The selection rule in section 4 chooses between *designs*. Refitting the same design can't be judged by a race against the champion, because both give the same walk-forward. A refreshed model therefore becomes `@challenger` only if every check passes:
+
+| Check | Limit | Why |
+|---|---|---|
+| Training days | ≥ 600 | Enough history for the monthly refits |
+| Walk-forward MAE since January 2025 | ≤ 3.54 | The upper end of the validated 95% interval |
+| Walk-forward MAE, last 90 days | ≤ 4.5 | The monitoring alert level: no recent degradation |
+| \|Bias\|, last 90 days | ≤ 2 points | As monitoring |
+| Monthly conformal coverage | Kupiec p ≥ 0.05 | The interval still means 80% |
+| Agreement with the champion, latest 60 days | mean \|difference\| ≤ 2, largest ≤ 8 points | A big jump signals a broken input, library or code, not new weather |
+| Output | finite, within 0–100 | Basic validity |
+
+Promotion to `@champion` is a separate, manual step, and the replaced version is kept as `@previous_champion`.
+
+**Reproducibility check (November 2026):** retrained on the data behind this report, the job reproduced the champion exactly, with walk-forward MAE 3.303, interval ±5.363 and identical predictions. It passed every check (coverage 78.1%, Kupiec p = 0.25).
+
 ## 11. Reproducibility
 
 - **Rebuild everything:** `python eda/build_silver.py`, `features.py`, `train_linear.py`, `train_trees.py`, `train_ensembles.py`, `calibrate_intervals.py`, `package_champion.py`, `validate_champion.py`.
