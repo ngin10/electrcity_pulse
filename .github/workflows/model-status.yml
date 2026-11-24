@@ -1,17 +1,17 @@
 name: Model status
 
-# Publishes the live model-status page (charts, badges, monitoring, retraining gate, registry) to GitHub Pages,
-# daily after the 18:45 UTC scoring job. Read-only against Databricks.
+# Optional: publishes the model-status page (charts, badges, monitoring, retraining gate, registry) to GitHub Pages,
+# read-only against Databricks. Manual only: by default the snapshot in docs/status is refreshed from a local
+# machine (python databricks/tools/model_status.py --out docs/status), so no Databricks credential lives in GitHub.
+# To run it here instead, add a schedule trigger back (e.g. cron '30 19 * * *', after the 18:45 UTC scoring job).
 #
-# One-time setup:
+# Setup, only if you use this workflow:
 #   Settings -> Secrets and variables -> Actions:
 #     secrets   DATABRICKS_HOST (https://<workspace>.cloud.databricks.com), DATABRICKS_TOKEN (a personal access token)
 #     variable  DATABRICKS_WAREHOUSE_ID (optional; defaults to the project's warehouse below)
 #   Settings -> Pages -> Source: GitHub Actions
 
 on:
-  schedule:
-    - cron: '30 19 * * *'
   workflow_dispatch:
 
 permissions:

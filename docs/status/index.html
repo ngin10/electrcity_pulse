@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse Model Status</title>
+<meta name="description" content="Live status of the GB day-ahead renewable-share model: forecasts, accuracy, monitoring, retraining gate and registry.">
+<style>
+:root { color-scheme: light; --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --line: #e1e0d9; --border: rgba(11,11,11,0.10); --good: #006300; --warning: #9a6a00; --critical: #d03b3b; --link: #256abf; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --page: #0d0d0d; --surface: #1a1a19;
+  --ink: #f0efec; --ink2: #c3c2b7; --line: #2c2c2a; --border: rgba(255,255,255,0.10); --good: #0ca30c; --warning: #fab219;
+  --critical: #e66767; --link: #6da7ec; } }
+:root[data-theme="dark"] { color-scheme: dark; --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --line: #2c2c2a;
+  --border: rgba(255,255,255,0.10); --good: #0ca30c; --warning: #fab219; --critical: #e66767; --link: #6da7ec; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 18px; margin: 40px 0 8px; }
+p { margin: 6px 0; } a { color: var(--link); } code { font-size: 13px; }
+.muted, .sub { color: var(--ink2); } .sub { font-size: 13px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0 8px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .label { color: var(--ink2); font-size: 13px; } .tile .value { font-size: 28px; font-weight: 600; margin: 2px 0; }
+figure { margin: 12px 0 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+figure img { width: 100%; height: auto; display: block; } figcaption { color: var(--ink2); font-size: 13px; margin-top: 6px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--surface); }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--ink2); font-weight: 600; } .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st { white-space: nowrap; font-weight: 600; } .st.good { color: var(--good); } .st.warning { color: var(--warning); }
+.st.critical { color: var(--critical); } .st.muted { color: var(--muted); font-weight: 400; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+</style></head>
+<body><main>
+<h1>Pulse model status</h1>
+<p class="muted">Day-ahead forecast of Great Britain's renewable share (wind, hydro and biomass), pulse.ml.renewable_share_day_ahead.
+Updated daily from the Databricks deployment. Generated 2026-11-24 12:28 UTC.</p>
+<div class="tiles"><div class="tile"><div class="label">Champion</div><div class="value">v1</div><div class="sub">challenger v2 awaiting review</div></div><div class="tile"><div class="label">MAE, last 30 days</div><div class="value">3.58 pts</div><div class="sub">2 live days + 28 walk-forward; alert above 4.5</div></div><div class="tile"><div class="label">Interval coverage, 90 days</div><div class="value">83%</div><div class="sub">target 80%; 90 days</div></div><div class="tile"><div class="label">Latest forecast</div><div class="value">55.0%</div><div class="sub">2026-11-24, 80% interval 49.6–60.3</div></div></div>
+
+<h2>Forecast and outcome</h2>
+<figure><picture><source srcset="forecast-dark.svg" media="(prefers-color-scheme: dark)"><img src="forecast-light.svg" alt="Forecast against outcome with the 80% interval, last 120 days" width="900"></picture>
+<figcaption>Before the "live scoring" line: the retraining job's walk-forward, each day predicted by a model refitted monthly on earlier
+days only, with each month's interval calibrated on earlier errors only. After it: forecasts written by the 18:45 UTC scoring job.
+Gaps are days that were not forecast in real time.</figcaption></figure>
+
+<h2>Accuracy</h2>
+<figure><picture><source srcset="accuracy-dark.svg" media="(prefers-color-scheme: dark)"><img src="accuracy-light.svg" alt="Thirty-day rolling mean absolute error against the warn and alert levels" width="900"></picture>
+<figcaption>Warn and alert levels are the ones the monitoring job uses. Validated: the champion's out-of-sample MAE at selection.</figcaption></figure>
+<figure><picture><source srcset="coverage-dark.svg" media="(prefers-color-scheme: dark)"><img src="coverage-light.svg" alt="Thirty-day rolling share of outcomes inside the 80% interval" width="900"></picture>
+<figcaption>An honest 80% interval contains about 80% of outcomes; misses come in runs during turbulent weeks.</figcaption></figure>
+
+<h2>Recent days</h2>
+<div class="scroll"><table><thead><tr><th>Day</th><th>Source</th><th class="n">Forecast %</th><th class="n">80% interval</th><th class="n">Outcome %</th>
+</tr></thead><tbody><tr><td>2026-11-24</td><td>live</td><td class='n'>55.0</td><td class='n'>49.6–60.3</td><td class='n'></td></tr><tr><td>2026-11-07</td><td>live</td><td class='n'>18.8</td><td class='n'>13.4–24.2</td><td class='n'>14.8</td></tr><tr><td>2026-11-06</td><td>live</td><td class='n'>19.3</td><td class='n'>13.9–24.6</td><td class='n'>20.1</td></tr><tr><td>2026-11-05</td><td>walk-forward</td><td class='n'>37.5</td><td class='n'>32.1–43.0</td><td class='n'>36.6</td></tr><tr><td>2026-11-04</td><td>walk-forward</td><td class='n'>40.7</td><td class='n'>35.3–46.2</td><td class='n'>38.0</td></tr><tr><td>2026-11-03</td><td>walk-forward</td><td class='n'>39.5</td><td class='n'>34.0–44.9</td><td class='n'>38.0</td></tr><tr><td>2026-11-02</td><td>walk-forward</td><td class='n'>45.0</td><td class='n'>39.6–50.4</td><td class='n'>43.4</td></tr><tr><td>2026-11-01</td><td>walk-forward</td><td class='n'>32.0</td><td class='n'>26.6–37.4</td><td class='n'>33.0</td></tr><tr><td>2026-10-31</td><td>walk-forward</td><td class='n'>24.8</td><td class='n'>19.4–30.2</td><td class='n'>26.8</td></tr><tr><td>2026-10-30</td><td>walk-forward</td><td class='n'>31.6</td><td class='n'>26.2–37.1</td><td class='n'>33.4</td></tr><tr><td>2026-10-29</td><td>walk-forward</td><td class='n'>26.7</td><td class='n'>21.3–32.1</td><td class='n'>25.6</td></tr><tr><td>2026-10-28</td><td>walk-forward</td><td class='n'>55.3</td><td class='n'>49.8–60.7</td><td class='n'>46.1</td></tr><tr><td>2026-10-27</td><td>walk-forward</td><td class='n'>67.4</td><td class='n'>62.0–72.8</td><td class='n'>59.7</td></tr><tr><td>2026-10-26</td><td>walk-forward</td><td class='n'>65.1</td><td class='n'>59.7–70.5</td><td class='n'>61.4</td></tr></tbody></table></div>
+
+<h2>Monitoring</h2>
+<p class="muted">Latest run 2026-11-24. Accuracy and drift need about 30 scored days with outcomes before they grade.</p>
+<div class="two"><div class="scroll"><table><thead><tr><th>Check</th><th>Worst</th></tr></thead><tbody><tr><td>accuracy</td><td><span class="st muted"><span aria-hidden="true">–</span> not enough data yet</span></td></tr><tr><td>feature drift</td><td><span class="st muted"><span aria-hidden="true">–</span> not enough data yet</span></td></tr><tr><td>freshness</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>prediction drift</td><td><span class="st muted"><span aria-hidden="true">–</span> not enough data yet</span></td></tr></tbody></table></div>
+<div class="scroll"><table><thead><tr><th>Source</th><th class="n">Present vs usual</th><th>Freshness</th></tr></thead>
+<tbody><tr><td>bank_holidays</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>calendar</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>carbon_intensity</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>demand_forecast</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>demand_outturn</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>fuelhh</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>market_index</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>neso_demand</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>pv_live</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>remit_outages</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>system_prices</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>weather_day_ahead</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>weather_historical</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>wind_forecast</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>wind_solar_actual</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr><tr><td>wind_solar_forecast</td><td class='n'>1.00</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td></tr></tbody></table></div></div>
+
+
+<h2>Retraining gate</h2>
+<p class="muted">The monthly job refits the champion's own specification and must pass every check to become @challenger.
+A person promotes it to @champion.</p>
+<p>Run of 2026-11-24: <strong>passed: registered as @challenger</strong>. Run id <code>25587a42c4a74cc691b2782d2b137cab</code>.</p><div class='scroll'><table><thead><tr><th>Check</th><th class='n'>Value</th><th class='n'>Limit</th><th>Result</th><th>Detail</th></tr></thead><tbody><tr><td>training days</td><td class='n'>1100.000</td><td class='n'>600</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'></td></tr><tr><td>walk forward mae</td><td class='n'>3.310</td><td class='n'>3.54</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'>674 out-of-sample days since 2025-01-01</td></tr><tr><td>recent mae</td><td class='n'>3.392</td><td class='n'>4.5</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'>last 90 days</td></tr><tr><td>recent bias</td><td class='n'>0.391</td><td class='n'>2</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'>mean error -0.39 (positive: under-predicting)</td></tr><tr><td>coverage</td><td class='n'>0.178</td><td class='n'>0.05</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'>454/584 = 77.7% inside; Kupiec p = 0.178</td></tr><tr><td>agreement</td><td class='n'>0.069</td><td class='n'>2</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'>mean |difference| 0.07, largest 0.38 (limit 8.0) over 60 days</td></tr><tr><td>valid output</td><td class='n'>0.000</td><td class='n'>0</td><td><span class="st good"><span aria-hidden="true">✓</span> ok</span></td><td class='muted'>predictions outside 0-100 or not finite</td></tr></tbody></table></div>
+
+<h2>Registry</h2>
+<div class="scroll"><table><thead><tr><th>Version</th><th>Aliases</th><th>Registered</th><th>Gate</th><th class="n">Walk-forward MAE</th>
+<th>Trained through</th></tr></thead><tbody><tr><td>v2</td><td>@challenger</td><td>2026-11-24</td><td>passed</td><td class='n'>3.310</td><td>2026-11-05</td></tr><tr><td>v1</td><td>@champion</td><td>2026-11-22</td><td>–</td><td class='n'>–</td><td>–</td></tr></tbody></table></div>
+
+<footer>Source: <a href="https://github.com/ngin10/electrcity_pulse">github.com/ngin10/electrcity_pulse</a> ·
+<a href="https://github.com/ngin10/electrcity_pulse/blob/main/docs/model_card.md">model card</a> ·
+<a href="https://github.com/ngin10/electrcity_pulse/blob/main/docs/model_validation_report.md">validation report</a> ·
+built by <code>databricks/tools/model_status.py</code></footer>
+</main></body></html>

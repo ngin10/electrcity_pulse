@@ -1,10 +1,10 @@
 # Electricity Pulse
 
 [![CI](https://github.com/ngin10/electrcity_pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/ngin10/electrcity_pulse/actions/workflows/ci.yml)
-[![model](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/model.json)](https://ngin10.github.io/electrcity_pulse/)
-[![30-day MAE](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/mae.json)](https://ngin10.github.io/electrcity_pulse/)
-[![monitoring](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/monitoring.json)](https://ngin10.github.io/electrcity_pulse/)
-[![latest forecast](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/forecast.json)](https://ngin10.github.io/electrcity_pulse/)
+[![model](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ngin10/electrcity_pulse/main/docs/status/badges/model.json)](#the-model-in-production)
+[![30-day MAE](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ngin10/electrcity_pulse/main/docs/status/badges/mae.json)](#the-model-in-production)
+[![monitoring](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ngin10/electrcity_pulse/main/docs/status/badges/monitoring.json)](#the-model-in-production)
+[![latest forecast](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ngin10/electrcity_pulse/main/docs/status/badges/forecast.json)](#the-model-in-production)
 
 **An end-to-end MLOps project: a day-ahead forecast of how much of Great Britain's electricity will come from
 renewables, from raw APIs to a monitored model in production.**
@@ -20,28 +20,43 @@ monitoring, all tested and deployed through CI.
 | **Accuracy** | MAE **3.30 points** out of sample (95% CI 3.12–3.54; R² 0.907) over 674 days, against 4.47 for the baseline |
 | **Uncertainty** | A conformal 80% interval: 78.2% coverage, statistically consistent with 80% (Kupiec p = 0.28) |
 | **Evidence** | [Model validation report](docs/model_validation_report.md) · [Model card](docs/model_card.md) |
-| **Live status** | [**ngin10.github.io/electrcity_pulse**](https://ngin10.github.io/electrcity_pulse/): rebuilt daily from the deployment |
+| **In production** | [Forecasts, accuracy and coverage from the deployment](#the-model-in-production) · [status snapshot](docs/status/status.json) |
 
-## The model in production, today
+## The model in production
 
-These charts are redrawn every evening from the Databricks deployment by
-[`model-status.yml`](.github/workflows/model-status.yml), so they show the model as it is now, not as it was at
-commit time. The [status page](https://ngin10.github.io/electrcity_pulse/) adds the monitoring results, the latest
-retraining gate and the registry.
+These charts are drawn from the Databricks deployment itself (the registry, the latest retraining run and the
+scoring and monitoring tables) by [`tools/model_status.py`](databricks/tools/model_status.py). The badges above
+come from the same snapshot, in [`docs/status/`](docs/status/), which is refreshed after each retraining or promotion:
+
+```
+python databricks/tools/model_status.py --out docs/status
+```
 
 <picture>
-  <source srcset="https://ngin10.github.io/electrcity_pulse/forecast-dark.svg" media="(prefers-color-scheme: dark)">
-  <img src="https://ngin10.github.io/electrcity_pulse/forecast-light.svg" alt="Day-ahead forecast against outcome with the 80% interval, last 120 days">
+  <source srcset="docs/status/forecast-dark.svg" media="(prefers-color-scheme: dark)">
+  <img src="docs/status/forecast-light.svg" alt="Day-ahead forecast against outcome with the 80% interval, last 120 days">
 </picture>
 
 <picture>
-  <source srcset="https://ngin10.github.io/electrcity_pulse/accuracy-dark.svg" media="(prefers-color-scheme: dark)">
-  <img src="https://ngin10.github.io/electrcity_pulse/accuracy-light.svg" alt="Thirty-day rolling MAE against the monitoring warn and alert levels">
+  <source srcset="docs/status/accuracy-dark.svg" media="(prefers-color-scheme: dark)">
+  <img src="docs/status/accuracy-light.svg" alt="Thirty-day rolling MAE against the monitoring warn and alert levels">
+</picture>
+
+<picture>
+  <source srcset="docs/status/coverage-dark.svg" media="(prefers-color-scheme: dark)">
+  <img src="docs/status/coverage-light.svg" alt="Thirty-day rolling share of outcomes inside the 80% interval">
 </picture>
 
 Before the "live scoring" line, the history is the retraining job's walk-forward. Each day there was predicted by
-a model refitted monthly on earlier days only, so it is out of sample too. The two spells above the alert level
-(December 2025 and August 2026) are the turbulent weeks the [model card](docs/model_card.md) warns about.
+a model refitted monthly on earlier days only, with each month's interval calibrated on earlier errors only, so it
+is out of sample too. The two spells above the alert level (December 2025 and August 2026) are the turbulent weeks
+the [model card](docs/model_card.md) warns about.
+
+<!-- Databricks screenshots: save them in docs/images/ (see docs/images/README.md), then uncomment.
+| Scoring job | Model registry | Retraining run |
+|---|---|---|
+| ![Scoring job run graph](docs/images/scoring-job.png) | ![Unity Catalog model with @champion and @challenger](docs/images/model-registry.png) | ![MLflow retraining run with gate metrics](docs/images/retraining-run.png) |
+-->
 
 ## Architecture
 
@@ -86,7 +101,7 @@ flowchart LR
 | **Retraining and promotion** | Monthly job: refits the champion's own specification on the latest features, recalibrates the interval, applies a promotion gate, registers `@challenger`; a person promotes it (or rolls back), with `@previous_champion` kept | [`notebooks/train_day_ahead.py`](databricks/src/notebooks/train_day_ahead.py), [`pulse/training.py`](databricks/src/pulse/training.py), [`notebooks/promote_model.py`](databricks/src/notebooks/promote_model.py) |
 | **Serving** | Batch scoring after the cutoff. Stores the exact features served and an exact per-feature explanation of every prediction; flags days with missing weather and widens their interval | [`notebooks/score_day_ahead.py`](databricks/src/notebooks/score_day_ahead.py) |
 | **Monitoring** | Rolling accuracy and coverage; feature and prediction drift against the same season; source freshness | [`notebooks/monitor_day_ahead.py`](databricks/src/notebooks/monitor_day_ahead.py), [`pulse/monitoring.py`](databricks/src/pulse/monitoring.py) |
-| **Public status** | A daily GitHub Action reads the registry, MLflow and the monitoring tables and publishes charts, badges and a status page to GitHub Pages | [`model-status.yml`](.github/workflows/model-status.yml), [`tools/model_status.py`](databricks/tools/model_status.py) |
+| **Production status** | Reads the registry, MLflow and the monitoring tables and renders the charts, badges and status snapshot in this README, with no Databricks credential stored in GitHub | [`tools/model_status.py`](databricks/tools/model_status.py), [`docs/status/`](docs/status/) |
 | **CI/CD** | Lint, unit, Spark and model tests, combined coverage, Bandit, pip-audit, gitleaks, bundle validation; deployed with Databricks Asset Bundles | [`ci.yml`](.github/workflows/ci.yml), [`databricks/`](databricks/README.md) |
 
 ## Design decisions worth asking about

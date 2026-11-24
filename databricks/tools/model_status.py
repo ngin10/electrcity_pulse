@@ -1,10 +1,11 @@
-"""Build the public model-status page: charts, badges and tables from the live Databricks deployment.
+"""Build the model-status snapshot: charts, badges and tables from the live Databricks deployment.
 
-    python databricks/tools/model_status.py                 # -> site/ (open site/index.html)
-    python databricks/tools/model_status.py --out other/
+    python databricks/tools/model_status.py --out docs/status    # refresh the snapshot the README shows, then commit
+    python databricks/tools/model_status.py                      # -> site/ (scratch; git-ignored)
 
-Run daily by .github/workflows/model-status.yml, which publishes site/ to GitHub Pages; the README embeds the
-charts and badges from there, so the repository shows the model as it is today, not as it was when committed.
+Run from your own machine with your `databricks auth login` profile, so no Databricks credential is stored in
+GitHub. Refresh it after a retraining run or a promotion. (.github/workflows/model-status.yml can do the same on
+demand and publish to GitHub Pages, but only if DATABRICKS_HOST and DATABRICKS_TOKEN secrets are configured.)
 
 What it reads (read-only):
   registry      pulse.ml.renewable_share_day_ahead: versions and aliases (@champion, @challenger, ...)
@@ -155,8 +156,11 @@ def fetch():
     from databricks.sdk.service.sql import StatementState
     from mlflow.tracking import MlflowClient
 
-    print('settings received: ' + ', '.join(f"{k}={'set' if os.environ.get(k) else 'missing'}"
-                                            for k in ('DATABRICKS_HOST', 'DATABRICKS_TOKEN', 'DATABRICKS_WAREHOUSE_ID')))
+    if os.environ.get('DATABRICKS_HOST') or os.environ.get('DATABRICKS_TOKEN'):
+        print('settings received: ' + ', '.join(f"{k}={'set' if os.environ.get(k) else 'missing'}"
+                                                for k in ('DATABRICKS_HOST', 'DATABRICKS_TOKEN', 'DATABRICKS_WAREHOUSE_ID')))
+    else:
+        print('auth: your Databricks CLI profile (databricks auth login)')
     w = WorkspaceClient()
     warehouse = os.environ.get('DATABRICKS_WAREHOUSE_ID') or next(iter(w.warehouses.list())).id
     print(f'SQL warehouse {warehouse}')
