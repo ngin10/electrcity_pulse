@@ -7,4 +7,4 @@ pyarrow>=17.0
 # Lets the consumer write gs:// paths
 fsspec>=2024.6
 gcsfs>=2024.6
-pytest>=8.0
+pytest>=9.2.0
