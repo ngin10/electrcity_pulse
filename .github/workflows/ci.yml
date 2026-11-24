@@ -157,11 +157,12 @@ jobs:
     name: Databricks bundle validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Needs a workspace: add DATABRICKS_HOST and DATABRICKS_TOKEN as repository secrets to turn it on.
-    # Without them (and on pull requests from forks, which get no secrets) the step is skipped, not failed.
+    # Needs a workspace: add DATABRICKS_HOST and DATABRICKS_BUNDLE_TOKEN as repository secrets to turn it on.
+    # Its own token (scopes: workspace, jobs, pipelines, identity), separate from the read-only one the status page
+    # uses. Without them (and on pull requests from forks, which get no secrets) the step is skipped, not failed.
     env:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_BUNDLE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: databricks/setup-cli@main
