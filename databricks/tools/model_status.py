@@ -155,8 +155,11 @@ def fetch():
     from databricks.sdk.service.sql import StatementState
     from mlflow.tracking import MlflowClient
 
+    print('settings received: ' + ', '.join(f"{k}={'set' if os.environ.get(k) else 'missing'}"
+                                            for k in ('DATABRICKS_HOST', 'DATABRICKS_TOKEN', 'DATABRICKS_WAREHOUSE_ID')))
     w = WorkspaceClient()
     warehouse = os.environ.get('DATABRICKS_WAREHOUSE_ID') or next(iter(w.warehouses.list())).id
+    print(f'SQL warehouse {warehouse}')
 
     def sql(statement):
         res = w.statement_execution.execute_statement(statement=statement, warehouse_id=warehouse, wait_timeout='50s')

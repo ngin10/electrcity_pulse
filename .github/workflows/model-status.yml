@@ -6,7 +6,7 @@ name: Model status
 # One-time setup:
 #   Settings -> Secrets and variables -> Actions:
 #     secrets   DATABRICKS_HOST (https://<workspace>.cloud.databricks.com), DATABRICKS_TOKEN (a personal access token)
-#     variable  DATABRICKS_WAREHOUSE_ID (optional; otherwise the first SQL warehouse)
+#     variable  DATABRICKS_WAREHOUSE_ID (optional; defaults to the project's warehouse below)
 #   Settings -> Pages -> Source: GitHub Actions
 
 on:
@@ -38,7 +38,8 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-          DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+          # Not a secret (useless without the token); a repository variable overrides it
+          DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID || 'f521e4748e25cc96' }}
           MLFLOW_DISABLE_AGENT_HINT: '1'
       - uses: actions/upload-pages-artifact@v3
         with:
