@@ -1,0 +1,109 @@
+{
+  "model": "pulse.ml.renewable_share_day_ahead",
+  "aliases": {
+    "challenger": "2",
+    "champion": "1"
+  },
+  "mae_30d": 3.5785858014667613,
+  "mae_30d_days": {
+    "live": 2,
+    "walk_forward": 28
+  },
+  "coverage_90d": 0.8333333333333334,
+  "coverage_90d_days": 90,
+  "monitoring_run": "2026-11-24",
+  "monitoring": {
+    "accuracy": null,
+    "feature_drift": null,
+    "freshness": "ok",
+    "prediction_drift": null
+  },
+  "monitoring_worst": "ok",
+  "latest_forecast": {
+    "target_date": "2026-11-24",
+    "predicted_share": 54.974743833981805,
+    "lower_80": 49.61132892801373,
+    "upper_80": 60.33815873994988,
+    "data_quality": "ok",
+    "model_version": "1"
+  },
+  "gate": {
+    "passed": true,
+    "checks": [
+      {
+        "check": "training_days",
+        "value": 1100.0,
+        "limit": 600.0,
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "walk_forward_mae",
+        "value": 3.3096014584377267,
+        "limit": 3.54,
+        "passed": true,
+        "detail": "674 out-of-sample days since 2025-01-01"
+      },
+      {
+        "check": "recent_mae",
+        "value": 3.3921924163105985,
+        "limit": 4.5,
+        "passed": true,
+        "detail": "last 90 days"
+      },
+      {
+        "check": "recent_bias",
+        "value": 0.3905410860247643,
+        "limit": 2.0,
+        "passed": true,
+        "detail": "mean error -0.39 (positive: under-predicting)"
+      },
+      {
+        "check": "coverage",
+        "value": 0.17790161020814468,
+        "limit": 0.05,
+        "passed": true,
+        "detail": "454/584 = 77.7% inside; Kupiec p = 0.178"
+      },
+      {
+        "check": "agreement",
+        "value": 0.06862279528872009,
+        "limit": 2.0,
+        "passed": true,
+        "detail": "mean |difference| 0.07, largest 0.38 (limit 8.0) over 60 days"
+      },
+      {
+        "check": "valid_output",
+        "value": 0.0,
+        "limit": 0.0,
+        "passed": true,
+        "detail": "predictions outside 0-100 or not finite"
+      }
+    ],
+    "run_id": "25587a42c4a74cc691b2782d2b137cab",
+    "date": "2026-11-24"
+  },
+  "generated": "2026-11-24 12:28 UTC",
+  "versions": [
+    {
+      "version": "1",
+      "created": "2026-11-22",
+      "aliases": [
+        "champion"
+      ],
+      "gate": "",
+      "wf_mae": "",
+      "trained_through": ""
+    },
+    {
+      "version": "2",
+      "created": "2026-11-24",
+      "aliases": [
+        "challenger"
+      ],
+      "gate": "passed",
+      "wf_mae": "3.310",
+      "trained_through": "2026-11-05"
+    }
+  ]
+}
