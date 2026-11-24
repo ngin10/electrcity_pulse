@@ -1,0 +1,59 @@
+name: Model status
+
+# Publishes the live model-status page (charts, badges, monitoring, retraining gate, registry) to GitHub Pages,
+# daily after the 18:45 UTC scoring job. Read-only against Databricks.
+#
+# One-time setup:
+#   Settings -> Secrets and variables -> Actions:
+#     secrets   DATABRICKS_HOST (https://<workspace>.cloud.databricks.com), DATABRICKS_TOKEN (a personal access token)
+#     variable  DATABRICKS_WAREHOUSE_ID (optional; otherwise the first SQL warehouse)
+#   Settings -> Pages -> Source: GitHub Actions
+
+on:
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: databricks/tools/status_requirements.txt
+      - run: pip install -r databricks/tools/status_requirements.txt
+      # The credentials reach only this step, not pip install or the actions
+      - run: python databricks/tools/model_status.py --out site
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+          MLFLOW_DISABLE_AGENT_HINT: '1'
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

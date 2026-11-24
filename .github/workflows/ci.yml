@@ -1,24 +1,74 @@
 name: CI
 
+# Every push and pull request runs the full pipeline. Branch protection should require the single "CI passed"
+# job, which succeeds only when every other job did (so adding a job never means editing the protection rule).
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request cancels the run in progress
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: jobs only read the repository
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  MLFLOW_DISABLE_AGENT_HINT: "1"
 
 jobs:
-  test:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - run: pytest -q tests
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install ruff==0.15.1 check-jsonschema==0.33.0
+      - name: Ruff (pyflakes, pycodestyle, bugbear; settings in pyproject.toml)
+        run: ruff check --output-format=github .
+      - name: Workflow and Dependabot files match GitHub's schemas
+        run: |
+          check-jsonschema --builtin-schema vendor.github-workflows .github/workflows/*.yml
+          check-jsonschema --builtin-schema vendor.dependabot .github/dependabot.yml
 
-  databricks:
-    # The bronze/silver/gold logic, on a local Spark (PySpark needs Java)
+  unit-tests:
+    name: Unit tests (ingestion, consumer, feature store)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COVERAGE_FILE: coverage-data/unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt pytest-cov==7.0.0
+      - run: mkdir -p coverage-data
+      - run: pytest -q tests --cov --cov-report= --junitxml=reports/unit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-unit
+          path: coverage-data/
+          include-hidden-files: true
+          retention-days: 7
+
+  spark-tests:
+    name: Spark tests (bronze, silver, gold on local PySpark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      COVERAGE_FILE: coverage-data/spark
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -27,7 +77,113 @@ jobs:
           java-version: "17"
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install -r databricks/requirements-dev.txt
-      - run: pytest -q databricks/tests
+          cache-dependency-path: databricks/requirements-dev.txt
+      - run: pip install -r databricks/requirements-dev.txt pytest-cov==7.0.0
+      - run: mkdir -p coverage-data
+      - run: pytest -q databricks/tests --cov --cov-report= --junitxml=reports/spark.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-spark
+          path: coverage-data/
+          include-hidden-files: true
+          retention-days: 7
+
+  ml-tests:
+    name: Model tests (linear, trees, ensemble, champion pyfunc)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: eda/requirements-ml.txt
+      # The versions the registered models were pickled with, so these tests also prove the pins still install
+      - run: pip install -r eda/requirements-ml.txt
+      - run: pytest -q eda/tests --junitxml=reports/ml.xml
+
+  coverage:
+    name: Coverage (unit + Spark combined)
+    needs: [unit-tests, spark-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install coverage==7.10.7
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-data
+          merge-multiple: true
+      - run: coverage combine coverage-data/*
+      - name: Report, and fail below the floor
+        # The floor only ratchets up: raise it as tests are added, never lower it to make a build pass
+        run: |
+          coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          coverage report --fail-under=40
+
+  security:
+    name: Security (bandit, pip-audit, gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # gitleaks scans the whole history, not just the last commit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install "bandit[toml]==1.8.6" pip-audit==2.9.0
+      - name: Bandit (medium severity and above; skips are justified in pyproject.toml)
+        run: bandit -c pyproject.toml -r . -ll
+      - name: Known vulnerabilities in every dependency set
+        run: |
+          for r in requirements.txt databricks/requirements-dev.txt databricks/tools/requirements.txt eda/requirements-ml.txt; do
+            echo "::group::$r"; pip-audit -r "$r" --progress-spinner off; echo "::endgroup::"
+          done
+      - name: Secrets in the code or its history
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  bundle:
+    name: Databricks bundle validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Needs a workspace: add DATABRICKS_HOST and DATABRICKS_BUNDLE_TOKEN as repository secrets to turn it on.
+    # Its own token (scopes: workspace, jobs, pipelines, identity), separate from the read-only one the status page
+    # uses. Without them (and on pull requests from forks, which get no secrets) the step is skipped, not failed.
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_BUNDLE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+        if: env.DATABRICKS_HOST != '' && env.DATABRICKS_TOKEN != ''
+      - name: Validate (resources, variables and paths; deploys nothing)
+        if: env.DATABRICKS_HOST != '' && env.DATABRICKS_TOKEN != ''
+        working-directory: databricks
+        run: databricks bundle validate
+      - name: Skipped
+        if: env.DATABRICKS_HOST == '' || env.DATABRICKS_TOKEN == ''
+        run: |
+          echo "::notice::Bundle validation skipped: DATABRICKS_HOST and DATABRICKS_TOKEN secrets are not set"
+
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [lint, unit-tests, spark-tests, ml-tests, coverage, security, bundle]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every job succeeded
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -e 'to_entries | all(.value.result == "success")' > /dev/null \
+            || { echo '${{ toJSON(needs) }}' | jq -r 'to_entries[] | "\(.key): \(.value.result)"'; exit 1; }

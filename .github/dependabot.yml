@@ -1,0 +1,26 @@
+# Weekly pull requests for outdated dependencies and GitHub Actions; CI runs on each one.
+# eda/requirements-ml.txt is deliberately left out: its pins are the versions the registered models were pickled
+# with, and they change only when the models are retrained.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: pip
+    directory: /databricks
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: pip
+    directory: /databricks/tools
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

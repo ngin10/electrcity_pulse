@@ -1,0 +1,33 @@
+# Monthly retraining, and the manual promotion step that follows it.
+resources:
+  jobs:
+    pulse_monthly_training:
+      name: pulse_monthly_training
+      schedule:
+        # 06:00 UTC on the 1st of each month (Quartz cron: sec min hour day-of-month month day-of-week)
+        quartz_cron_expression: "0 0 6 1 * ?"
+        timezone_id: UTC
+      max_concurrent_runs: 1
+      tasks:
+        # Refits the champion's specification on the latest feature store and registers a @challenger if it passes
+        # the gate. The feature store is refreshed daily by pulse_daily and pulse_day_ahead_scoring.
+        - task_key: train
+          notebook_task:
+            notebook_path: ../src/notebooks/train_day_ahead.py
+            base_parameters:
+              catalog: ${var.catalog}
+              model_alias: champion
+              # true promotes a passing challenger straight to @champion; false waits for pulse_promote_model
+              auto_promote: "false"
+
+    # Run by hand after reviewing the challenger: promotes it (or a given version) to @champion, or rolls back
+    pulse_promote_model:
+      name: pulse_promote_model
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: promote
+          notebook_task:
+            notebook_path: ../src/notebooks/promote_model.py
+            base_parameters:
+              catalog: ${var.catalog}
+              version: ""

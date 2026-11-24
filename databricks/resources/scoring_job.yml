@@ -1,0 +1,52 @@
+# The evening run: refresh the features after the 18:00 UTC cutoff, then predict tomorrow with the champion model.
+# Tomorrow's wind, solar and demand forecasts are published around 16:45-17:45 UTC, so this runs after them; the
+# ingestion code must have landed them first (and, on Free Edition, tools/sync_landing.py copied them into the volume).
+resources:
+  jobs:
+    pulse_day_ahead_scoring:
+      name: pulse_day_ahead_scoring
+      schedule:
+        # 18:45 UTC, after the cutoff (Quartz cron: sec min hour day-of-month month day-of-week)
+        quartz_cron_expression: "0 45 18 * * ?"
+        timezone_id: UTC
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: bronze
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.pulse_bronze.id}
+          max_retries: 1
+          min_retry_interval_millis: 60000
+
+        - task_key: silver
+          depends_on:
+            - task_key: bronze
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.pulse_silver.id}
+
+        - task_key: feature_store
+          depends_on:
+            - task_key: silver
+          notebook_task:
+            notebook_path: ../src/notebooks/feature_store.py
+            base_parameters:
+              catalog: ${var.catalog}
+              code_version: ${bundle.git.commit}
+
+        - task_key: score
+          depends_on:
+            - task_key: feature_store
+          notebook_task:
+            notebook_path: ../src/notebooks/score_day_ahead.py
+            base_parameters:
+              catalog: ${var.catalog}
+              model_alias: champion
+
+        # Accuracy, drift and freshness checks into ml.monitoring. Records only: it never fails the job
+        - task_key: monitor
+          depends_on:
+            - task_key: score
+          notebook_task:
+            notebook_path: ../src/notebooks/monitor_day_ahead.py
+            base_parameters:
+              catalog: ${var.catalog}
+              model_alias: champion

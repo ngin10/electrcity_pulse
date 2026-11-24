@@ -1,0 +1,505 @@
+<title>Electricity Pulse EDA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a fixed index of the 15 tables on the left, one table per view on the right; charts in a two-column grid. */
+:root {
+  --page: #f4f5f3; --surface: #fdfdfc; --ink: #0e1211; --ink2: #49514e; --muted: #7b8380;
+  --rule: #dfe2de; --grid: #e6e8e4; --axis: #c2c7c3; --accent: #0b6e63; --accent-wash: #e2efec;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #0ca30c; --warn: #fab219; --bad: #d03b3b; --info: #7b8380;
+  --seq0: #dcebfc; --seq1: #86b6ef; --seq2: #3987e5; --seq3: #1c5cab; --seq4: #0d366b;
+  --div-neg: #c93a38; --div-mid: #f0efec; --div-pos: #256abf;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d0f0f; --surface: #171919; --ink: #eceeed; --ink2: #b7bcb9; --muted: #868c89;
+    --rule: #2a2d2d; --grid: #262929; --axis: #3a3e3d; --accent: #5cc4b6; --accent-wash: #16302c;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --seq0: #14263c; --seq1: #184f95; --seq2: #2a78d6; --seq3: #6da7ec; --seq4: #cde2fb;
+    --div-neg: #e66767; --div-mid: #303332; --div-pos: #3987e5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0d0f0f; --surface: #171919; --ink: #eceeed; --ink2: #b7bcb9; --muted: #868c89;
+  --rule: #2a2d2d; --grid: #262929; --axis: #3a3e3d; --accent: #5cc4b6; --accent-wash: #16302c;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --seq0: #14263c; --seq1: #184f95; --seq2: #2a78d6; --seq3: #6da7ec; --seq4: #cde2fb;
+  --div-neg: #e66767; --div-mid: #303332; --div-pos: #3987e5;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); max-width: 1480px; margin: 0 auto; }
+nav { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto;
+  padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 12px; }
+nav .brand { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; margin: 0 0 2px; }
+nav .sub { color: var(--muted); font-size: 12px; margin: 0 0 18px; }
+nav .group { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; margin: 16px 0 6px; }
+nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+nav a { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 5px;
+  color: var(--ink2); text-decoration: none; font-size: 13.5px; }
+nav a:hover { background: var(--accent-wash); color: var(--ink); }
+nav a[aria-current="page"] { background: var(--accent-wash); color: var(--ink); font-weight: 500; }
+nav a .n { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+main { min-width: 0; padding-block: 28px 64px; padding-left: 20px; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.view h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 6px; text-wrap: balance; }
+header.view .meta { color: var(--ink2); margin: 0; max-width: 78ch; }
+header.view .meta code, td code, .keys code { font-family: var(--mono); font-size: 0.88em; background: var(--accent-wash);
+  padding: 1px 5px; border-radius: 3px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 500;
+  margin: 40px 0 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0; margin-top: 22px;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.tile { padding: 14px 16px 14px 0; min-width: 0; }
+.tile .label { color: var(--muted); font-size: 12px; }
+.tile .value { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; overflow-wrap: anywhere; }
+.tile .note { color: var(--ink2); font-size: 12px; }
+ul.findings { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 86ch; }
+ul.findings li { padding-left: 16px; position: relative; color: var(--ink); }
+ul.findings li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; grid-auto-flow: dense; align-items: start; }
+figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 14px 10px; min-width: 0; }
+figure.chart.wide { grid-column: 1 / -1; }
+figure.chart h3 { font-size: 15px; font-weight: 600; margin: 0; text-wrap: balance; }
+figure.chart p.sub { color: var(--ink2); font-size: 12.5px; margin: 3px 0 8px; max-width: 110ch; }
+.plot { width: 100%; }
+.chart-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 4px; }
+.chart-foot .stat { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+button.data-toggle { font: inherit; font-size: 12px; color: var(--ink2); background: none; border: 1px solid var(--rule);
+  border-radius: 5px; padding: 2px 9px; cursor: pointer; }
+button.data-toggle:hover { color: var(--ink); border-color: var(--axis); }
+.scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+.chart .scroll { margin-top: 8px; max-height: 320px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.name { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.note { color: var(--ink2); font-size: 12.5px; margin: 6px 0 0; max-width: 100ch; }
+td { max-width: 46ch; }
+.status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12px; color: var(--ink2); }
+.status i { width: 14px; height: 14px; border-radius: 50%; display: inline-grid; place-items: center; font-style: normal;
+  font-size: 10px; font-weight: 600; color: #fff; }
+.status.good i { background: var(--good); } .status.warn i { background: var(--warn); color: #0e1211; }
+.status.bad i { background: var(--bad); } .status.info i { background: var(--info); }
+.issues { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+.issue { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.issue h3 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+.issue p { margin: 0; color: var(--ink2); max-width: 86ch; }
+.issue .where { font-family: var(--mono); font-size: 12px; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; }
+.facts h3 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+.facts p { margin: 0; color: var(--ink2); }
+.block + .block { margin-top: 22px; }
+.block h3.t { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  nav { position: static; max-height: none; padding-block: 16px 4px; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  nav .sub { margin-bottom: 8px; }
+  nav .group { display: none; }
+  nav ul { flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 8px; }
+  nav ul + ul { margin-top: 2px; }
+  nav a { white-space: nowrap; border: 1px solid var(--rule); }
+  nav a .n { display: none; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-block: 12px 48px; }
+  header.view h1 { font-size: 24px; }
+  .charts, .facts { grid-template-columns: minmax(0, 1fr); }
+  .issue { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+</style>
+
+<div class="shell">
+  <nav aria-label="Tables">
+    <p class="brand">Electricity Pulse EDA</p>
+    <p class="sub">15 silver tables · Nov 2023 – Nov 2026</p>
+    <ul id="nav-top"></ul>
+    <p class="group">Tables</p>
+    <ul id="nav-tables"></ul>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<script type="application/json" id="report-data">/*DATA*/</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script>
+const R = JSON.parse(document.getElementById('report-data').textContent);
+const slug = id => id.replace(/_/g, '-');
+const VIEWS = [{ id: 'overview', title: 'Overview' }, { id: 'across', title: 'Across tables' }, { id: 'features', title: 'Feature engineering' }, { id: 'models', title: 'Models' },
+  ...R.sections.map(s => ({ id: slug(s.id), title: s.id, section: s }))];
+const main = document.getElementById('main');
+let live = [];
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function fmt(v, digits) {
+  if (v === null || v === undefined || Number.isNaN(v)) return '–';
+  if (typeof v !== 'number') return String(v);
+  const a = Math.abs(v);
+  const d = digits ?? (a >= 1000 ? 0 : a >= 100 ? 1 : a >= 1 ? 2 : 3);
+  return v.toLocaleString('en-GB', { maximumFractionDigits: d });
+}
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const STATUS = { good: ['✓', 'OK'], warn: ['!', 'Check'], bad: ['×', 'Problem'], info: ['i', 'Note'] };
+const status = level => `<span class="status ${level}"><i aria-hidden="true">${STATUS[level][0]}</i>${STATUS[level][1]}</span>`;
+
+/* ---------- theme tokens for the canvas ---------- */
+function tokens() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = n => cs.getPropertyValue(n).trim();
+  return { ink: v('--ink'), ink2: v('--ink2'), muted: v('--muted'), grid: v('--grid'), axis: v('--axis'), surface: v('--surface'),
+    s: [1, 2, 3, 4, 5, 6, 7, 8].map(i => v('--s' + i)), seq: [0, 1, 2, 3, 4].map(i => v('--seq' + i)),
+    div: [v('--div-neg'), v('--div-mid'), v('--div-pos')], dark: cs.colorScheme.includes('dark') || v('--page') === '#0d0f0f' };
+}
+const FONT = '"IBM Plex Sans", system-ui, sans-serif';
+
+/* ---------- chart options ---------- */
+function axisStyle(C, extra = {}) {
+  return Object.assign({ axisLine: { lineStyle: { color: C.axis } }, axisTick: { show: false },
+    axisLabel: { color: C.muted, fontSize: 11, fontFamily: FONT, hideOverlap: true },
+    splitLine: { lineStyle: { color: C.grid } }, nameTextStyle: { color: C.muted, fontSize: 11, fontFamily: FONT } }, extra);
+}
+function tip(C, extra = {}) {
+  return Object.assign({ backgroundColor: C.surface, borderColor: C.axis, borderWidth: 1, padding: [6, 10],
+    textStyle: { color: C.ink, fontSize: 12, fontFamily: FONT }, confine: true, extraCssText: 'box-shadow:0 2px 10px rgba(0,0,0,.14);' }, extra);
+}
+const legend = (C, n) => n > 1 ? { type: 'scroll', top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 14,
+  textStyle: { color: C.ink2, fontSize: 12, fontFamily: FONT }, pageTextStyle: { color: C.muted }, pageIconColor: C.ink2,
+  pageIconInactiveColor: C.axis } : undefined;
+const dateLabel = v => /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.slice(0, 7) : v;
+const unitAxisName = u => u || '';
+
+function optLine(spec, C) {
+  const n = spec.series.length;
+  const smooth = spec.series.some(s => /28-day/.test(s.name));
+  return {
+    color: C.s, legend: legend(C, n),
+    grid: { left: 4, right: 14, top: n > 1 ? 44 : 26, bottom: 4, containLabel: true },
+    tooltip: tip(C, { trigger: 'axis', axisPointer: { lineStyle: { color: C.axis } }, valueFormatter: v => fmt(v) + (spec.unit ? ' ' + spec.unit : '') }),
+    xAxis: axisStyle(C, { type: 'category', data: spec.x, boundaryGap: false, splitLine: { show: false },
+      axisLabel: { color: C.muted, fontSize: 11, fontFamily: FONT, hideOverlap: true, formatter: dateLabel } }),
+    yAxis: axisStyle(C, { type: 'value', name: unitAxisName(spec.unit), nameLocation: 'end', nameGap: 8, nameTextStyle: { color: C.muted, fontSize: 11, align: 'left', fontFamily: FONT }, axisLine: { show: false }, scale: !spec.stack && !spec.area }),
+    series: spec.series.map((s, i) => {
+      const faint = smooth && !/28-day/.test(s.name);
+      return { name: s.name, type: 'line', data: s.data, showSymbol: false, connectNulls: false,
+        sampling: spec.x.length > 600 ? 'lttb' : undefined, stack: spec.stack ? 'a' : undefined,
+        lineStyle: { width: spec.stack ? 1 : faint ? 1 : 2, opacity: faint ? 0.5 : 1 },
+        areaStyle: spec.stack ? { opacity: 0.82 } : (spec.area ? { opacity: 0.14 } : undefined),
+        emphasis: { focus: n > 1 ? 'series' : 'none' } };
+    }),
+  };
+}
+function optBar(spec, C) {
+  const n = spec.series.length, h = spec.horizontal;
+  const cat = axisStyle(C, { type: 'category', data: spec.x, inverse: h, splitLine: { show: false },
+    axisLabel: { color: h ? C.ink2 : C.muted, fontSize: 11, fontFamily: FONT, hideOverlap: !h, interval: h ? 0 : 'auto',
+      width: h ? 190 : undefined, overflow: h ? 'truncate' : undefined, formatter: dateLabel } });
+  const val = axisStyle(C, { type: 'value', name: unitAxisName(spec.unit), nameLocation: 'end', nameGap: 8,
+    nameTextStyle: { color: C.muted, fontSize: 11, align: h ? 'right' : 'left', fontFamily: FONT }, axisLine: { show: false } });
+  return {
+    color: C.s, legend: legend(C, n),
+    grid: { left: 4, right: h ? 28 : 14, top: n > 1 ? 44 : 26, bottom: 4, containLabel: true },
+    tooltip: tip(C, { trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: C.grid, opacity: 0.5 } },
+      valueFormatter: v => fmt(v) + (spec.unit ? ' ' + spec.unit : '') }),
+    xAxis: h ? val : cat, yAxis: h ? cat : val,
+    series: spec.series.map(s => ({ name: s.name, type: 'bar', data: s.data, stack: spec.stack ? 'a' : undefined, barMaxWidth: 26,
+      barGap: '12%', itemStyle: spec.stack ? { borderColor: C.surface, borderWidth: spec.x.length > 60 ? 0 : 1 }
+        : { borderRadius: h ? [0, 3, 3, 0] : [3, 3, 0, 0] }, emphasis: { focus: n > 1 ? 'series' : 'none' } })),
+  };
+}
+function optHist(spec, C) {
+  const e = spec.edges;
+  return {
+    color: C.s, grid: { left: 4, right: 14, top: 26, bottom: 4, containLabel: true },
+    tooltip: tip(C, { trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: C.grid, opacity: 0.5 } },
+      formatter: p => `${fmt(e[p[0].dataIndex])} to ${fmt(e[p[0].dataIndex + 1])}${spec.unit ? ' ' + spec.unit : ''}<br><b>${fmt(p[0].value, 0)}</b> values` }),
+    xAxis: axisStyle(C, { type: 'category', data: e.slice(0, -1).map(v => fmt(v)), splitLine: { show: false }, name: spec.unit,
+      nameLocation: 'end', nameGap: 6 }),
+    yAxis: axisStyle(C, { type: 'value', name: 'count', nameLocation: 'end', nameGap: 8,
+      nameTextStyle: { color: C.muted, fontSize: 11, align: 'left', fontFamily: FONT }, axisLine: { show: false } }),
+    series: [{ type: 'bar', data: spec.counts, barCategoryGap: '8%', itemStyle: { borderRadius: [2, 2, 0, 0] } }],
+  };
+}
+function optHeat(spec, C) {
+  const data = [], vals = [];
+  spec.z.forEach((row, yi) => row.forEach((v, xi) => { if (v !== null) { data.push([xi, yi, v]); vals.push(v); } }));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (spec.diverging) { const m = Math.max(Math.abs(lo), Math.abs(hi)); const cap = m <= 1 ? 1 : m; lo = -cap; hi = cap; }
+  const small = spec.x.length <= 15 && spec.y.length <= 15;
+  const strong = v => spec.diverging ? Math.abs(v) / hi > 0.55 : (v - lo) / (hi - lo || 1) > 0.55;
+  return {
+    grid: { left: 4, right: 14, top: 8, bottom: 52, containLabel: true },
+    tooltip: tip(C, { formatter: p => `${esc(spec.y[p.value[1]])} · ${esc(spec.x[p.value[0]])}<br><b>${fmt(p.value[2])}</b>${spec.unit ? ' ' + spec.unit : ''}` }),
+    xAxis: axisStyle(C, { type: 'category', data: spec.x, splitLine: { show: false }, axisLine: { show: false },
+      axisLabel: { color: C.muted, fontSize: 11, fontFamily: FONT, hideOverlap: !small, interval: small ? 0 : 'auto', rotate: small && spec.x.length > 5 ? 35 : 0,
+        width: small ? 110 : undefined, overflow: small ? 'truncate' : undefined } }),
+    yAxis: axisStyle(C, { type: 'category', data: spec.y, inverse: true, splitLine: { show: false }, axisLine: { show: false },
+      axisLabel: { color: C.ink2, fontSize: 11, fontFamily: FONT, interval: 0, width: 150, overflow: 'truncate' } }),
+    visualMap: { type: 'continuous', min: lo, max: hi, dimension: 2, calculable: false, orient: 'horizontal', left: 'center', bottom: 4,
+      itemWidth: 10, itemHeight: 180, text: [fmt(hi) + (spec.unit ? ' ' + spec.unit : ''), fmt(lo)],
+      textStyle: { color: C.muted, fontSize: 11, fontFamily: FONT }, inRange: { color: spec.diverging ? C.div : C.seq } },
+    series: [{ type: 'heatmap', data: small ? data.map(d => ({ value: d, label: { color: C.dark ? C.ink : (strong(d[2]) ? '#fff' : C.ink) } })) : data,
+      label: { show: small, fontSize: 11, fontFamily: FONT, formatter: p => fmt(p.value[2], spec.diverging && hi <= 1 ? 2 : undefined) },
+      itemStyle: { borderColor: C.surface, borderWidth: small ? 2 : 0 }, emphasis: { itemStyle: { borderColor: C.ink, borderWidth: 1 } }, progressive: 0 }],
+  };
+}
+function optBox(spec, C) {
+  const many = spec.x.length > 8;
+  return {
+    grid: { left: 4, right: 14, top: 26, bottom: 4, containLabel: true },
+    tooltip: tip(C, { trigger: 'item', formatter: p => { const d = spec.stats[p.dataIndex], u = spec.unit ? ' ' + spec.unit : '';
+      return `<b>${esc(spec.x[p.dataIndex])}</b><br>99th percentile ${fmt(d[4])}${u}<br>Upper quartile ${fmt(d[3])}${u}<br>Median ${fmt(d[2])}${u}<br>Lower quartile ${fmt(d[1])}${u}<br>1st percentile ${fmt(d[0])}${u}`; } }),
+    xAxis: axisStyle(C, { type: 'category', data: spec.x, splitLine: { show: false },
+      axisLabel: { color: C.ink2, fontSize: 11, fontFamily: FONT, interval: 0, rotate: many ? 40 : 0, width: many ? 90 : 120, overflow: 'break' } }),
+    yAxis: axisStyle(C, { type: 'value', name: unitAxisName(spec.unit), nameLocation: 'end', nameGap: 8, scale: true,
+      nameTextStyle: { color: C.muted, fontSize: 11, align: 'left', fontFamily: FONT }, axisLine: { show: false } }),
+    series: [{ type: 'boxplot', data: spec.stats, boxWidth: [8, 34], itemStyle: { color: C.s[0] + '33', borderColor: C.s[0], borderWidth: 1.5 },
+      emphasis: { itemStyle: { borderColor: C.s[0], borderWidth: 2, shadowBlur: 0 } } }],
+  };
+}
+function optScatter(spec, C) {
+  const f = spec.fit, hasFit = f && f.slope !== null && f.x0 !== null;
+  return {
+    grid: { left: 4, right: 18, top: 30, bottom: 30, containLabel: true },
+    tooltip: tip(C, { trigger: 'item', formatter: p => p.seriesType === 'scatter' ? `${esc(spec.xLabel)}: <b>${fmt(p.value[0])}</b><br>${esc(spec.yLabel)}: <b>${fmt(p.value[1])}</b>` : `Linear fit, r = ${fmt(f.r, 2)}` }),
+    xAxis: axisStyle(C, { type: 'value', name: spec.xLabel, nameLocation: 'middle', nameGap: 26, scale: true, axisLine: { show: false } }),
+    yAxis: axisStyle(C, { type: 'value', name: spec.yLabel, nameLocation: 'end', nameGap: 10, scale: true,
+      nameTextStyle: { color: C.muted, fontSize: 11, align: 'left', fontFamily: FONT }, axisLine: { show: false } }),
+    series: [{ type: 'scatter', data: spec.points, symbolSize: 4, itemStyle: { color: C.s[0], opacity: 0.38 }, emphasis: { itemStyle: { opacity: 1 } } },
+      ...(hasFit ? [{ type: 'line', data: [[f.x0, f.intercept + f.slope * f.x0], [f.x1, f.intercept + f.slope * f.x1]], showSymbol: false,
+        lineStyle: { color: C.s[1], width: 2 }, tooltip: { show: true }, z: 3 }] : [])],
+  };
+}
+function optCi(spec, C) {
+  const u = spec.unit ? ' ' + spec.unit : '', hasRef = spec.ref !== null && spec.ref !== undefined;
+  const stroke = { stroke: C.s[0], lineWidth: 2 };
+  return {
+    grid: { left: 4, right: 26, top: 10, bottom: spec.unit ? 30 : 8, containLabel: true },
+    tooltip: tip(C, { trigger: 'item', formatter: p => { const i = p.dataIndex;
+      return `<b>${esc(spec.x[i])}</b><br>Estimate ${fmt(spec.est[i])}${u}<br>95% interval ${fmt(spec.lo[i])} to ${fmt(spec.hi[i])}${u}`; } }),
+    xAxis: axisStyle(C, { type: 'value', scale: true, name: spec.unit, nameLocation: 'middle', nameGap: 24, axisLine: { show: false },
+      ...(hasRef ? { min: v => Math.min(v.min, spec.ref) < v.min ? spec.ref : null, max: v => Math.max(v.max, spec.ref) > v.max ? spec.ref : null } : {}) }),
+    yAxis: axisStyle(C, { type: 'category', data: spec.x, inverse: true, splitLine: { show: false },
+      axisLabel: { color: C.ink2, fontSize: 11, fontFamily: FONT, interval: 0, width: 230, overflow: 'truncate' } }),
+    series: [{ type: 'custom', data: spec.x.map((_, i) => [spec.lo[i], spec.hi[i], i]), encode: { x: [0, 1], y: 2 }, z: 2,
+      renderItem: (params, api) => { const a = api.coord([api.value(0), api.value(2)]), b = api.coord([api.value(1), api.value(2)]), y = a[1];
+        return { type: 'group', children: [{ type: 'line', shape: { x1: a[0], y1: y, x2: b[0], y2: y }, style: stroke },
+          { type: 'line', shape: { x1: a[0], y1: y - 5, x2: a[0], y2: y + 5 }, style: stroke },
+          { type: 'line', shape: { x1: b[0], y1: y - 5, x2: b[0], y2: y + 5 }, style: stroke }] }; },
+      markLine: hasRef ? { silent: true, symbol: 'none', lineStyle: { color: C.muted, type: 'solid', width: 1 },
+        label: { show: true, formatter: fmt(spec.ref), color: C.muted, fontSize: 11 }, data: [{ xAxis: spec.ref }] } : undefined },
+      { type: 'scatter', data: spec.x.map((_, i) => [spec.est[i], i]), symbolSize: 10, z: 3,
+        itemStyle: { color: C.s[0], borderColor: C.surface, borderWidth: 2 } }],
+  };
+}
+const OPT = { line: optLine, bar: optBar, hist: optHist, heat: optHeat, box: optBox, scatter: optScatter, ci: optCi };
+function plotHeight(spec) {
+  if (spec.t === 'bar' && spec.horizontal) return Math.max(230, spec.x.length * (spec.series.length > 1 ? 34 : 24) + 60);
+  if (spec.t === 'ci') return Math.max(190, spec.x.length * 30 + 70);
+  if (spec.t === 'heat') return Math.max(300, Math.min(520, spec.y.length * (spec.x.length <= 15 ? 38 : 24) + 110));
+  return spec.wide ? 320 : 290;
+}
+
+/* ---------- the table twin of a chart ---------- */
+function dataTable(spec) {
+  const cap = 400; let head, rows, total;
+  if (spec.t === 'line' || spec.t === 'bar') {
+    head = ['', ...spec.series.map(s => s.name + (spec.unit ? ` (${spec.unit})` : ''))];
+    total = spec.x.length; rows = spec.x.slice(0, cap).map((x, i) => [x, ...spec.series.map(s => fmt(s.data[i]))]);
+  } else if (spec.t === 'hist') {
+    head = ['From', 'To', 'Count']; total = spec.counts.length;
+    rows = spec.counts.map((c, i) => [fmt(spec.edges[i]), fmt(spec.edges[i + 1]), fmt(c, 0)]);
+  } else if (spec.t === 'heat') {
+    head = ['', ...spec.x]; total = spec.y.length; rows = spec.y.map((y, i) => [y, ...spec.z[i].map(v => fmt(v))]);
+  } else if (spec.t === 'ci') {
+    head = ['', 'Estimate', 'Lower 95%', 'Upper 95%'].map((h, i) => i && spec.unit ? `${h} (${spec.unit})` : h); total = spec.x.length;
+    rows = spec.x.map((x, i) => [x, fmt(spec.est[i]), fmt(spec.lo[i]), fmt(spec.hi[i])]);
+  } else if (spec.t === 'box') {
+    head = ['', '1st pct', 'Lower quartile', 'Median', 'Upper quartile', '99th pct']; total = spec.x.length;
+    rows = spec.x.map((x, i) => [x, ...spec.stats[i].map(v => fmt(v))]);
+  } else {
+    head = [spec.xLabel, spec.yLabel]; total = spec.points.length; rows = spec.points.slice(0, cap).map(p => p.map(v => fmt(v)));
+  }
+  const more = total > rows.length ? `<p class="note">First ${rows.length} of ${fmt(total, 0)} rows.</p>` : '';
+  return `<div class="scroll"><table><thead><tr>${head.map((h, i) => `<th class="${i ? 'num' : ''}">${esc(h)}</th>`).join('')}</tr></thead><tbody>${
+    rows.map(r => `<tr>${r.map((c, i) => `<td class="${i ? 'num' : 'name'}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${more}`;
+}
+
+function chartCard(spec, key) {
+  const fig = el('figure', 'chart' + (spec.wide ? ' wide' : ''));
+  fig.appendChild(el('h3', '', esc(spec.title)));
+  fig.appendChild(el('p', 'sub', esc(spec.sub || '')));
+  const plot = el('div', 'plot'); plot.style.height = plotHeight(spec) + 'px';
+  plot.setAttribute('role', 'img'); plot.setAttribute('aria-label', spec.title);
+  fig.appendChild(plot);
+  const foot = el('div', 'chart-foot');
+  foot.appendChild(el('span', 'stat', spec.t === 'hist' ? `mean ${fmt(spec.mean)} · median ${fmt(spec.median)}${spec.unit ? ' ' + esc(spec.unit) : ''}` : ''));
+  const btn = el('button', 'data-toggle', 'Show data'); btn.type = 'button'; btn.id = 'toggle-' + key; btn.setAttribute('aria-expanded', 'false');
+  foot.appendChild(btn); fig.appendChild(foot);
+  const holder = el('div'); holder.hidden = true; fig.appendChild(holder);
+  btn.addEventListener('click', () => {
+    if (!holder.innerHTML) holder.innerHTML = dataTable(spec);
+    holder.hidden = !holder.hidden; btn.textContent = holder.hidden ? 'Show data' : 'Hide data';
+    btn.setAttribute('aria-expanded', String(!holder.hidden));
+  });
+  live.push({ plot, spec, chart: null });
+  return fig;
+}
+function draw() {
+  if (!window.echarts) return;
+  const C = tokens();
+  live.forEach(item => {
+    if (item.chart) item.chart.dispose();
+    item.chart = echarts.init(item.plot, null, { renderer: 'canvas' });
+    item.chart.setOption(Object.assign({ animation: false, textStyle: { fontFamily: FONT } }, OPT[item.spec.t](item.spec, C)));
+  });
+}
+
+/* ---------- page pieces ---------- */
+function tableBlock(t) {
+  const numeric = j => t.rows.every(r => r[j] === null || typeof r[j] === 'number' || /^[-+−]?[\d,.]+ ?(%|h|×)?$/.test(String(r[j])));
+  const isNum = t.cols.map((_, j) => j > 0 && numeric(j));
+  return `<div class="block"><h3 class="t">${esc(t.title)}</h3><div class="scroll"><table><thead><tr>${
+    t.cols.map((c, j) => `<th class="${isNum[j] ? 'num' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${
+    t.rows.map(r => `<tr>${r.map((c, j) => `<td class="${isNum[j] ? 'num' : ''}">${esc(typeof c === 'number' ? fmt(c) : (c ?? '–'))}</td>`).join('')}</tr>`).join('')
+    }</tbody></table></div>${t.note ? `<p class="note">${esc(t.note)}</p>` : ''}</div>`;
+}
+function checksBlock(checks) {
+  return `<div class="scroll"><table><thead><tr><th>Status</th><th>Check</th><th class="num">Count</th><th class="num">Of</th><th class="num">Share</th><th>Detail</th></tr></thead><tbody>${
+    checks.map(c => `<tr><td>${status(c.level)}</td><td>${esc(c.name)}</td><td class="num">${fmt(c.count, 0)}</td><td class="num">${c.of ? fmt(c.of, 0) : '–'}</td><td class="num">${c.of ? (100 * c.count / c.of).toFixed(c.count / c.of < 0.01 && c.count ? 3 : 1) + '%' : '–'}</td><td>${esc(c.note)}</td></tr>`).join('')
+    }</tbody></table></div>`;
+}
+const NUM_COLS = [['non_null_pct', 'Non-null %'], ['distinct', 'Distinct'], ['min', 'Min'], ['p01', '1st pct'], ['p25', 'Lower quartile'], ['median', 'Median'],
+  ['mean', 'Mean'], ['p75', 'Upper quartile'], ['p99', '99th pct'], ['max', 'Max'], ['std', 'Std dev'], ['cv', 'Std dev ÷ mean'], ['skew', 'Skew'],
+  ['kurtosis', 'Excess kurtosis'], ['zero_pct', 'Zero %'], ['negative_pct', 'Negative %'], ['outlier_pct', 'Outliers %']];
+function profileBlock(p) {
+  let html = '';
+  if (p.numeric.length) html += `<div class="block"><h3 class="t">Numeric columns</h3><div class="scroll"><table><thead><tr><th>Column</th>${
+    NUM_COLS.map(c => `<th class="num">${c[1]}</th>`).join('')}</tr></thead><tbody>${
+    p.numeric.map(r => `<tr><td class="name">${esc(r.column)}</td>${NUM_COLS.map(c => `<td class="num">${fmt(r[c[0]], c[0] === 'distinct' ? 0 : undefined)}</td>`).join('')}</tr>`).join('')
+    }</tbody></table></div><p class="note">Outliers: values more than 1.5 interquartile ranges outside the quartiles.</p></div>`;
+  if (p.other.length) html += `<div class="block"><h3 class="t">Other columns</h3><div class="scroll"><table><thead><tr><th>Column</th><th>Type</th><th class="num">Non-null %</th><th class="num">Distinct</th><th>Range or most common values</th></tr></thead><tbody>${
+    p.other.map(r => `<tr><td class="name">${esc(r.column)}</td><td>${esc(r.type)}</td><td class="num">${fmt(r.non_null_pct)}</td><td class="num">${fmt(r.distinct, 0)}</td><td>${esc(r.detail)}</td></tr>`).join('')
+    }</tbody></table></div></div>`;
+  return html;
+}
+function chartsGrid(charts, prefix) {
+  const grid = el('div', 'charts');
+  charts.forEach((c, i) => grid.appendChild(chartCard(c, prefix + '-' + i)));
+  return grid;
+}
+const h2 = t => el('h2', '', esc(t));
+function inferenceBlock(inf, prefix) {
+  main.appendChild(h2('Inferential statistics'));
+  main.appendChild(el('div', '', findingsList(inf.findings)));
+  if (inf.charts.length) { const g = chartsGrid(inf.charts, prefix + '-inf'); g.style.marginTop = '18px'; main.appendChild(g); }
+  const t = el('div', '', inf.tables.map(tableBlock).join('')); t.style.marginTop = '22px'; main.appendChild(t);
+}
+const findingsList = items => `<ul class="findings">${items.map(f => `<li>${esc(f)}</li>`).join('')}</ul>`;
+
+function viewSection(s) {
+  const head = el('header', 'view', `<h1>${esc(s.title)}</h1><p class="meta"><code>silver.${esc(s.id)}</code> · ${esc(s.source)} · one row per ${esc(s.grain)}</p>`);
+  main.appendChild(head);
+  main.appendChild(el('div', 'tiles', s.tiles.map(t => `<div class="tile"><div class="label">${esc(t.label)}</div><div class="value">${esc(t.value)}</div><div class="note">${esc(t.note)}</div></div>`).join('')));
+  main.appendChild(h2('What stands out')); main.appendChild(el('div', '', findingsList(s.findings)));
+  main.appendChild(h2(`Charts (${s.charts.length})`)); main.appendChild(chartsGrid(s.charts, s.id));
+  inferenceBlock(s.inference, s.id);
+  const feats = R.features.catalogue.filter(c => c.source === s.id);
+  if (feats.length) { main.appendChild(h2(`Engineered features (${feats.length})`));
+    main.appendChild(el('p', 'note', `Day-ahead features built from this table, each using only what was known at 18:00 UTC the day before. The full set and its evaluation are under <a href="#features">Feature engineering</a>.`));
+    const c = el('div', '', catalogueTable(feats, false)); c.style.marginTop = '10px'; main.appendChild(c); }
+  main.appendChild(h2('Data quality checks')); main.appendChild(el('div', '', checksBlock(s.checks)));
+  main.appendChild(h2('Column statistics'));
+  main.appendChild(el('div', '', `<p class="note keys" style="margin:0 0 12px">Key: ${s.keys.map(k => `<code>${esc(k)}</code>`).join(' ')}. ${fmt(s.raw_records, 0)} raw records became ${fmt(s.rows, 0)} rows.</p>` + profileBlock(s.profile)));
+  if (s.tables.length) { main.appendChild(h2('Tables')); main.appendChild(el('div', '', s.tables.map(tableBlock).join(''))); }
+}
+const yes = '<span class="status good"><i aria-hidden="true">✓</i>Yes</span>';
+function catalogueTable(rows, withSource) {
+  return `<div class="scroll" style="max-height:640px;overflow-y:auto"><table><thead><tr><th>Feature</th>${withSource ? '<th>Source table</th>' : ''}<th>What it is</th><th>Known</th><th class="num">Coverage %</th><th class="num">r with target</th><th class="num">Spearman ρ</th><th class="num">Mutual information</th><th class="num">Importance</th><th>Selected</th><th>In gold today</th></tr></thead><tbody>${
+    rows.map(c => `<tr><td class="name">${esc(c.feature)}</td>${withSource ? `<td class="name">${esc(c.source)}</td>` : ''}<td>${esc(c.definition)}</td><td>${esc(c.known)}</td><td class="num">${fmt(c.coverage, 1)}</td><td class="num">${fmt(c.r, 3)}</td><td class="num">${fmt(c.rho, 3)}</td><td class="num">${fmt(c.mi, 3)}</td><td class="num">${fmt(c.importance, 3)}</td><td>${c.selected ? yes : ''}</td><td>${c.gold ? yes : ''}</td></tr>`).join('')
+    }</tbody></table></div><p class="note">Importance: rise in mean absolute error (points) on the validation months when the feature is shuffled, in a model with every feature. Mutual information and importance are measured on the training years only. r and ρ use all scored days.</p>`;
+}
+function viewFeatures() {
+  const F = R.features, S = F.summary;
+  main.appendChild(el('header', 'view', '<h1>Feature engineering</h1><p class="meta">One row per target day, built from all 15 tables, using only what was known at 18:00 UTC the day before. The target is the day\'s renewable share of GB generation.</p>'));
+  main.appendChild(el('div', 'tiles', [['Features', String(S.features), `from 15 tables and the calendar; ${S.selected} selected`],
+    ['Error on 2026', `${fmt(S.best_mae, 2)} points`, `against ${fmt(S.gold_mae, 2)} for gold's eight features`],
+    ['Improvement', `${Math.round(100 * (1 - S.best_mae / S.gold_mae))}%`, 'lower mean absolute error, out of sample'],
+    ['Leakage audit', `${S.leaks} of ${S.features}`, `features changed when the future was deleted (${S.audit_days} days tested)`]]
+    .map(t => `<div class="tile"><div class="label">${t[0]}</div><div class="value">${t[1]}</div><div class="note">${t[2]}</div></div>`).join('')));
+  main.appendChild(h2('What stands out')); main.appendChild(el('div', '', findingsList(F.findings)));
+  main.appendChild(h2(`Charts (${F.charts.length})`)); main.appendChild(chartsGrid(F.charts, 'features'));
+  main.appendChild(h2('Evaluation and audit')); main.appendChild(el('div', '', F.tables.map(tableBlock).join('')));
+  main.appendChild(h2(`All ${F.catalogue.length} features`)); main.appendChild(el('div', '', catalogueTable(F.catalogue, true)));
+}
+function viewModels() {
+  const M = R.models, S = M.summary;
+  main.appendChild(el('header', 'view', '<h1>Models</h1><p class="meta">A baseline for the daily renewable share of GB generation, and models that beat it. Every prediction is made a day ahead, by a model fitted only on earlier days.</p>'));
+  main.appendChild(el('div', 'tiles', [['Baseline error', `${fmt(S.baseline_mae, 2)} points`, `gold's 8 features, linear; R² ${fmt(S.baseline_r2, 3)}`],
+    ['Best model error', `${fmt(S.best_mae, 2)} points`, `ridge and gradient boosting blended; R² ${fmt(S.best_r2, 3)}`],
+    ['Improvement', `${Math.round(100 * (1 - S.best_mae / S.baseline_mae))}%`, `${fmt(S.gain, 2)} points (${fmt(S.gain_lo, 2)} to ${fmt(S.gain_hi, 2)}); better in ${S.months_won} of ${S.months} months`],
+    ['80% interval', `${fmt(S.coverage, 1)}% inside`, `${fmt(S.width, 1)} points wide on average, after calibration`]]
+    .map(t => `<div class="tile"><div class="label">${t[0]}</div><div class="value">${t[1]}</div><div class="note">${t[2]}</div></div>`).join('')));
+  main.appendChild(h2('What stands out')); main.appendChild(el('div', '', findingsList(M.findings)));
+  main.appendChild(h2(`Charts (${M.charts.length})`)); main.appendChild(chartsGrid(M.charts, 'models'));
+  main.appendChild(h2('Tables')); main.appendChild(el('div', '', M.tables.map(tableBlock).join('')));
+}
+function viewAcross() {
+  main.appendChild(el('header', 'view', '<h1>Across tables</h1><p class="meta">How the sources relate to each other and to the model target, the daily renewable share of GB generation.</p>'));
+  main.appendChild(h2('What stands out')); main.appendChild(el('div', '', findingsList(R.cross.findings)));
+  main.appendChild(h2(`Charts (${R.cross.charts.length})`)); main.appendChild(chartsGrid(R.cross.charts, 'across'));
+  inferenceBlock(R.cross.inference, 'across');
+  main.appendChild(h2('Tables')); main.appendChild(el('div', '', R.cross.tables.map(tableBlock).join('')));
+}
+function viewOverview() {
+  const rows = R.sections.reduce((a, s) => a + s.rows, 0), charts = R.sections.reduce((a, s) => a + s.charts.length + s.inference.charts.length, 0) + R.cross.charts.length + R.cross.inference.charts.length + R.features.charts.length + R.models.charts.length;
+  const checks = R.sections.reduce((a, s) => a + s.checks.length, 0);
+  main.appendChild(el('header', 'view', `<h1>Electricity Pulse: exploratory data analysis</h1><p class="meta">The 15 silver tables behind the day-ahead renewable-share model, rebuilt locally from the landing files and profiled one by one. Great Britain, half-hourly, 1 November 2023 to 6 November 2026.</p>`));
+  main.appendChild(el('div', 'tiles', [['Tables', '15', 'one view each, in the index'], ['Rows', fmt(rows, 0), 'after keeping one row per key'],
+    ['Charts', String(charts), 'each with its data table'], ['Hypothesis tests', String(R.tests.tests), `${R.tests.fdr} hold after correcting for multiple testing`], ['Quality checks', String(checks), 'the silver rules, plus gaps and cross-checks']]
+    .map(t => `<div class="tile"><div class="label">${t[0]}</div><div class="value">${t[1]}</div><div class="note">${t[2]}</div></div>`).join('')));
+  main.appendChild(h2('What the data says'));
+  main.appendChild(el('div', 'facts', R.overview.facts.map(f => `<div><h3>${esc(f[0])}</h3><p>${esc(f[1])}</p></div>`).join('')));
+  main.appendChild(h2('What the tests add'));
+  main.appendChild(el('p', 'note', `${R.tests.tests} hypothesis tests were run across the tables. ${R.tests.raw} have p below 0.05; ${R.tests.fdr} survive a false-discovery-rate correction and ${R.tests.bonferroni} a Bonferroni one. Half-hours are not independent, so tests run on daily values with Newey–West errors or a 14-day block bootstrap. Each table's view has its tests under "Inferential statistics".`));
+  const tf = el('div', 'facts', R.overview.inference.map(f => `<div><h3>${esc(f[0])}</h3><p>${esc(f[1])}</p></div>`).join('')); tf.style.marginTop = '16px'; main.appendChild(tf);
+  main.appendChild(h2('Feature engineering'));
+  main.appendChild(el('p', 'note', `${R.features.summary.features} day-ahead features were built from the 15 tables and audited for leakage. Fitted before 2026 and scored on 2026, they cut the mean error from ${fmt(R.features.summary.gold_mae, 2)} to ${fmt(R.features.summary.best_mae, 2)} points of renewable share. <a href="#features">See the features and the evaluation.</a>`));
+  main.appendChild(h2('Models'));
+  main.appendChild(el('p', 'note', `Predicting a day ahead over ${R.models.summary.days} days from January 2025, refitted monthly: the baseline (gold's eight features, linear) has a mean error of ${fmt(R.models.summary.baseline_mae, 2)} points of renewable share; the best model ${fmt(R.models.summary.best_mae, 2)}. <a href="#models">See the models.</a>`));
+  main.appendChild(h2('What needs attention'));
+  main.appendChild(el('div', 'issues', R.overview.issues.map(i => `<div class="issue"><div>${status(i[0])}</div><div><h3>${esc(i[2])}</h3><p>${esc(i[3])} <a class="where" href="#${slug(i[1])}">${esc(i[1])}</a></p></div></div>`).join('')));
+  main.appendChild(h2('The tables'));
+  main.appendChild(el('div', 'scroll', `<table><thead><tr><th>Table</th><th>Source</th><th>One row per</th><th class="num">Rows</th><th class="num">Superseded</th><th class="num">Charts</th><th>Checks</th></tr></thead><tbody>${
+    R.sections.map(s => { const n = l => s.checks.filter(c => c.level === l).length;
+      return `<tr><td class="name"><a href="#${slug(s.id)}">${esc(s.id)}</a></td><td>${esc(s.source)}</td><td>${esc(s.grain)}</td><td class="num">${fmt(s.rows, 0)}</td><td class="num">${fmt(s.duplicates, 0)}</td><td class="num">${s.charts.length}</td><td>${
+        n('bad') ? status('bad') + ' ' + n('bad') + ' &nbsp;' : ''}${n('warn') ? status('warn') + ' ' + n('warn') + ' &nbsp;' : ''}${status('good')} ${n('good')}</td></tr>`; }).join('')
+    }</tbody></table>`));
+  main.appendChild(el('p', 'note', 'Superseded: raw records replaced by a later version of the same key (replays, revisions, overlapping fetch windows). Method: the JSON in data/landing is parsed and typed as in databricks/src/pulse/sources.py, one row is kept per key by the same sequence, and the hard rules are counted here instead of being applied.'));
+}
+
+/* ---------- routing ---------- */
+function show() {
+  const id = (location.hash || '#overview').slice(1);
+  const view = VIEWS.find(v => v.id === id) || VIEWS[0];
+  live.forEach(i => i.chart && i.chart.dispose()); live = [];
+  main.innerHTML = '';
+  if (view.section) viewSection(view.section); else if (view.id === 'across') viewAcross(); else if (view.id === 'features') viewFeatures(); else if (view.id === 'models') viewModels(); else viewOverview();
+  document.querySelectorAll('nav a').forEach(a => a.getAttribute('href') === '#' + view.id ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+  window.scrollTo(0, 0);
+  draw();
+}
+document.getElementById('nav-top').innerHTML = VIEWS.slice(0, 4).map(v => `<li><a href="#${v.id}">${v.title}</a></li>`).join('');
+document.getElementById('nav-tables').innerHTML = VIEWS.slice(4).map(v => `<li><a href="#${v.id}"><span>${v.title}</span><span class="n">${v.section.rows >= 1e6 ? (v.section.rows / 1e6).toFixed(2) + 'M' : v.section.rows >= 1000 ? Math.round(v.section.rows / 1000) + 'k' : v.section.rows}</span></a></li>`).join('');
+window.addEventListener('hashchange', show);
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => live.forEach(i => i.chart && i.chart.resize()), 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+show();
+</script>

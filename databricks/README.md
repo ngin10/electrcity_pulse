@@ -21,8 +21,24 @@ pulse.silver.completeness       periods present vs expected, per day
 pulse.gold.grid_half_hourly     generation, demand, prices, carbon per period        pipelines/gold.py
 pulse.gold.generation_daily     energy by category, renewable share (the target)     pulse/gold.py
 pulse.gold.features_day_ahead   features known at 18:00 UTC the day before + target
+        │
+        │  (from silver, beside gold) the versioned feature store      notebooks/feature_store.py
         ▼
-notebooks/pipeline_health.py    fails the job on missing files, rejections, gaps
+pulse.gold.feature_store_day_ahead   131 day-ahead features + target, Delta-versioned for a year
+pulse.ml.feature_catalogue      what each feature means, its source and leakage rule
+        │  @champion from the Unity Catalog registry                   notebooks/score_day_ahead.py
+        ▼
+pulse.ml.predictions            prediction, 80% interval, data-quality flag
+pulse.ml.features_served        the exact features each prediction used
+pulse.ml.explanations           each feature's contribution, adding up to the prediction
+        │                                                              notebooks/monitor_day_ahead.py
+        ▼
+pulse.ml.monitoring             accuracy, drift and freshness checks, graded ok / warn / alert
+
+notebooks/train_day_ahead.py    monthly: refit the champion's specification, gate it, register @challenger
+notebooks/promote_model.py      by hand: @challenger -> @champion (old one kept as @previous_champion), or roll back
+
+notebooks/pipeline_health.py    fails the daily job on missing files, rejections, gaps
 ```
 
 ## Reading order
@@ -36,9 +52,14 @@ notebooks/pipeline_health.py    fails the job on missing files, rejections, gaps
 | 5 | [src/pipelines/silver.py](src/pipelines/silver.py) | How each source becomes views, a rejected flow and AUTO CDC tables |
 | 6 | [src/pulse/gold.py](src/pulse/gold.py) | Shares, completeness, and how every feature avoids looking past the cutoff |
 | 7 | [src/pipelines/gold.py](src/pipelines/gold.py) | The gold materialized views |
-| 8 | [src/notebooks/pipeline_health.py](src/notebooks/pipeline_health.py) | What fails the daily job |
-| 9 | [tools/sync_landing.py](tools/sync_landing.py) | Free Edition only: copying new landing files into the volume, never overwriting |
-| 10 | [tests/](tests/) | Each rule shown on a real response; the gold leakage rules on small tables |
+| 8 | [src/pulse/feature_store.py](src/pulse/feature_store.py) | The 131 day-ahead features and their leakage rules (`availability`) |
+| 9 | [src/notebooks/feature_store.py](src/notebooks/feature_store.py) | How the feature store is versioned: change-only writes, catalogue, retention |
+| 10 | [src/notebooks/score_day_ahead.py](src/notebooks/score_day_ahead.py) | Which days are scored, the weather flag, the exact explanation, the checked writes |
+| 11 | [src/pulse/monitoring.py](src/pulse/monitoring.py) | The monitoring statistics and thresholds: Kupiec, PSI and KS with block-bootstrap limits, seasonal reference |
+| 12 | [src/notebooks/monitor_day_ahead.py](src/notebooks/monitor_day_ahead.py) | How the checks are fed and written to `ml.monitoring` |
+| 13 | [src/notebooks/pipeline_health.py](src/notebooks/pipeline_health.py) | What fails the daily job |
+| 14 | [tools/sync_landing.py](tools/sync_landing.py) | Free Edition only: copying new landing files into the volume, never overwriting |
+| 15 | [tests/](tests/) | Each rule shown on a real response; the gold leakage rules on small tables |
 
 The pipeline files only declare tables. All the logic is plain DataFrame functions in `src/pulse/`, so it runs
 and is tested on a laptop.
@@ -80,6 +101,90 @@ and is tested on a laptop.
   - the calendar.
 - `is_trainable` marks complete days with all the key features.
 
+## The feature store
+
+The 131 day-ahead features from the EDA, built daily from silver and kept with their history. The logic is
+[src/pulse/feature_store.py](src/pulse/feature_store.py): plain pandas, shared with `eda/features.py`, so the EDA and
+the job compute exactly the same values. The job task is [src/notebooks/feature_store.py](src/notebooks/feature_store.py).
+
+| Table | Holds | Key |
+|---|---|---|
+| `gold.feature_store_day_ahead` | One row per target day: the features, the target, and which logic and commit produced it | `target_date` |
+| `ml.feature_catalogue` | One row per feature: definition, source table, when it is known, the version that added it | `feature` |
+| `ml.features_served` | Append-only: the exact feature row behind each prediction | none, never updated |
+| `ml.predictions` | Each prediction with its 80% interval and model version | `target_date`, `model_name`, `model_version` |
+| `ml.explanations` | Each prediction's feature contributions (SHAP) | as above, plus `feature` |
+| `ml.monitoring` | One row per check, subject and metric, per day | `run_date`, model, `check_name`, `subject`, `metric` |
+
+The feature-store task creates the `ml` tables; the scoring and monitoring tasks fill them.
+
+**Versioning, at three levels.**
+- *Logic:* `FEATURE_SET_VERSION` in `feature_store.py`, bumped whenever a definition changes, and the Git commit
+  (`code_version`), both stored on every row.
+- *Data:* every write is a Delta version, kept for 365 days (`delta.logRetentionDuration` and
+  `delta.deletedFileRetentionDuration`). A rerun only rewrites days whose values changed, compared by a hash of the row,
+  so the history records real changes.
+- *Model to features:* every prediction records the feature table's Delta version and the exact feature values
+  it used (`ml.features_served`).
+
+**Rolling back.** `DESCRIBE HISTORY` lists the versions; `SELECT ... VERSION AS OF n` reads one;
+`RESTORE TABLE ... TO VERSION AS OF n` returns to it (as a new, undoable version). To roll back the logic, revert the
+commit, bump `FEATURE_SET_VERSION` and rerun.
+
+The original 8-feature `gold.features_day_ahead` materialized view is unchanged; materialized views are recomputed on
+every update and can't be time-travelled, which is why the store is a separate, job-written Delta table.
+
+## Scoring and monitoring
+
+The `pulse_day_ahead_scoring` job runs at 18:45 UTC, after tomorrow's forecasts are published: bronze → silver →
+feature store → score → monitor.
+
+- **Score** ([score_day_ahead.py](src/notebooks/score_day_ahead.py)) loads `pulse.ml.renewable_share_day_ahead@champion`
+  with its own pinned libraries. It predicts every day after the last known outcome that this model version
+  hasn't scored; past days are never re-predicted. A day without its day-ahead forecasts isn't scored. A day
+  without its day-ahead weather is scored but flagged `weather_missing`, and its interval is widened 1.91×,
+  because the error roughly doubles. Every write is checked by row count.
+- **Monitor** ([monitor_day_ahead.py](src/notebooks/monitor_day_ahead.py)) grades four checks and writes them to
+  `ml.monitoring`. It records only and never fails the job.
+
+| Check | Alert when |
+|---|---|
+| Accuracy, last 30 days with an outcome, overall and per data-quality flag | MAE above 4.5; \|bias\| above 2 points; coverage outside 65–92% or Kupiec p below 0.05 |
+| Feature drift, last 30 served days against the same season (±15 days) before registration | PSI or KS beyond the 99th percentile of what 30 days from that season give by chance (7-day block bootstrap) |
+| Prediction drift | as for features, on the predictions |
+| Freshness | a source's features present at the cutoff fall below half their usual share |
+
+## Retraining and promotion
+
+`pulse_monthly_training` runs at 06:00 UTC on the 1st of each month
+([train_day_ahead.py](src/notebooks/train_day_ahead.py), logic in [pulse/training.py](src/pulse/training.py)):
+
+1. Clone the `@champion`'s specification (members, settings, model code), so only the data is new.
+2. Walk-forward from January 2025 with monthly refits; recalibrate the 80% interval on its errors.
+3. Fit on every day with a known outcome.
+4. Apply the gate. Every check must pass:
+
+| Check | Limit |
+|---|---|
+| Training days | at least 600 |
+| Walk-forward MAE since January 2025 | at most 3.54, the upper end of the validated 95% interval |
+| Walk-forward MAE, last 90 days | at most 4.5 |
+| \|Bias\|, last 90 days | at most 2 points |
+| Interval coverage (monthly conformal) | Kupiec p at least 0.05 |
+| Agreement with the champion, latest 60 days | mean \|difference\| at most 2 points, largest at most 8 |
+| Valid output | every prediction finite and within 0–100 |
+
+5. Log everything to MLflow, the gate included, and, if it passed, register the model as `@challenger` with its
+   training data's feature-table version and digest.
+
+Promotion is a person's decision: review the run, then run `pulse_promote_model`
+([promote_model.py](src/notebooks/promote_model.py)). It refuses versions that didn't pass the gate, moves the old
+champion to `@previous_champion`, and rolls back the same way. Set the job parameter `auto_promote` to `true` to
+skip the review.
+
+Dry run on the real data (November 2026): retraining reproduced the validated model exactly, with walk-forward MAE
+3.303, interval ±5.363 and identical predictions, and passed every check (coverage 78.1%, Kupiec p = 0.25).
+
 ## Deploying
 
 The same code runs two ways; only where bronze reads the landing files differs.
@@ -112,8 +217,10 @@ Once only:
    databricks bundle validate
    databricks bundle deploy
    ```
-   This creates `pulse_bronze`, `pulse_silver` and `pulse_gold` (serverless, triggered) and the `pulse_daily`
-   job: bronze → silver → gold → health, daily at 07:00 UK time.
+   This creates `pulse_bronze`, `pulse_silver` and `pulse_gold` (serverless, triggered) and two jobs:
+   `pulse_daily` (bronze → silver → gold and the feature store → health, daily at 07:00 UK time) and
+   `pulse_day_ahead_scoring` (bronze → silver → feature store → score → monitor, at 18:45 UTC), plus
+   `pulse_monthly_training` and `pulse_promote_model` (see above).
 
 Each run, from the repo root, after the ingestion code has landed new files in `data/landing`:
 ```

@@ -1,0 +1,48 @@
+# Tool configuration only: the project isn't a package. Used by CI (.github/workflows/ci.yml) and pre-commit.
+
+[tool.ruff]
+target-version = "py312"
+line-length = 160
+extend-exclude = ["eda/out", "mlruns", "eda/practice"]
+
+[tool.ruff.lint]
+# pycodestyle errors and warnings, pyflakes (undefined names, unused imports), bugbear (likely bugs)
+select = ["E", "F", "W", "B"]
+ignore = [
+    "E702",  # several short statements on one line: house style in the analysis scripts
+    "E731",  # small named lambdas
+    "E741",  # single-letter names such as l (lower) in statistics code
+    "B905",  # zip() without strict=: the zipped sequences are built together
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Databricks notebooks: imports follow %pip / restartPython cells, spark/dbutils are injected at runtime, and
+# markdown cells are written as one line per paragraph
+"databricks/src/notebooks/*.py" = ["E402", "E501", "F821"]
+"databricks/src/pipelines/*.py" = ["F821"]
+# Analysis scripts: imports after sys.path set-up; long chart titles, captions and table rows
+"eda/*.py" = ["E402"]
+"eda/{analyze,features,inference,model}.py" = ["E402", "E501"]
+# The feature catalogue: one feature per line, with its description
+"databricks/src/pulse/feature_store.py" = ["E501"]
+
+# Coverage of the production code. CI measures it in the unit and Spark jobs and combines the two
+# (relative paths, so files measured on different runners line up).
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = [".", "databricks/src/pulse"]
+omit = ["tests/*", "*/tests/*", "eda/*", "databricks/src/notebooks/*", "databricks/src/pipelines/*", "databricks/src/setup/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+# Security lint (CI's security job runs it at medium severity and above)
+[tool.bandit]
+exclude_dirs = ["tests", "databricks/tests", "eda/tests", "eda/out", "mlruns", ".venv"]
+skips = [
+    "B608",  # SQL built with f-strings: every interpolated value is a table name, column name or model version from
+             # this code or a job parameter, never user input; Spark SQL DDL/MERGE can't take bound parameters for names
+    "B108",  # /tmp on a Databricks driver: a per-cluster scratch disk, used for the model's requirements file
+]

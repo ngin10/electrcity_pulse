@@ -1,0 +1,10 @@
+# The libraries the registered models were trained and pickled with (see the champion's requirements.txt in
+# MLflow). Pinned: a model must be loaded with the versions it was saved with. Used by CI's ml-tests job.
+numpy==2.4.6
+pandas==3.0.3
+scipy==1.18.0
+scikit-learn==1.9.0
+lightgbm==4.7.0
+mlflow==3.18.0
+cloudpickle==3.1.2
+pytest>=8.0
