@@ -27,8 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install ruff==0.15.1 check-jsonschema==0.33.0
@@ -46,8 +46,8 @@ jobs:
     env:
       COVERAGE_FILE: coverage-data/unit
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -55,7 +55,7 @@ jobs:
       - run: pip install -r requirements.txt pytest-cov==7.0.0
       - run: mkdir -p coverage-data
       - run: pytest -q tests --cov --cov-report= --junitxml=reports/unit.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-unit
@@ -70,12 +70,12 @@ jobs:
     env:
       COVERAGE_FILE: coverage-data/spark
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -83,7 +83,7 @@ jobs:
       - run: pip install -r databricks/requirements-dev.txt pytest-cov==7.0.0
       - run: mkdir -p coverage-data
       - run: pytest -q databricks/tests --cov --cov-report= --junitxml=reports/spark.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-spark
@@ -96,8 +96,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -112,12 +112,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install coverage==7.10.7
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
           path: coverage-data
@@ -134,10 +134,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # gitleaks scans the whole history, not just the last commit
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install "bandit[toml]==1.8.6" pip-audit==2.9.0
@@ -149,7 +149,7 @@ jobs:
             echo "::group::$r"; pip-audit -r "$r" --progress-spinner off; echo "::endgroup::"
           done
       - name: Secrets in the code or its history
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -164,7 +164,7 @@ jobs:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_BUNDLE_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: databricks/setup-cli@main
         if: env.DATABRICKS_HOST != '' && env.DATABRICKS_TOKEN != ''
       - name: Validate (resources, variables and paths; deploys nothing)
