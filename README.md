@@ -1,6 +1,10 @@
 # Electricity Pulse
 
 [![CI](https://github.com/ngin10/electrcity_pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/ngin10/electrcity_pulse/actions/workflows/ci.yml)
+[![model](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/model.json)](https://ngin10.github.io/electrcity_pulse/)
+[![30-day MAE](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/mae.json)](https://ngin10.github.io/electrcity_pulse/)
+[![monitoring](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/monitoring.json)](https://ngin10.github.io/electrcity_pulse/)
+[![latest forecast](https://img.shields.io/endpoint?url=https://ngin10.github.io/electrcity_pulse/badges/forecast.json)](https://ngin10.github.io/electrcity_pulse/)
 
 **An end-to-end MLOps project: a day-ahead forecast of how much of Great Britain's electricity will come from
 renewables, from raw APIs to a monitored model in production.**
@@ -16,6 +20,28 @@ monitoring, all tested and deployed through CI.
 | **Accuracy** | MAE **3.30 points** out of sample (95% CI 3.12–3.54; R² 0.907) over 674 days, against 4.47 for the baseline |
 | **Uncertainty** | A conformal 80% interval: 78.2% coverage, statistically consistent with 80% (Kupiec p = 0.28) |
 | **Evidence** | [Model validation report](docs/model_validation_report.md) · [Model card](docs/model_card.md) |
+| **Live status** | [**ngin10.github.io/electrcity_pulse**](https://ngin10.github.io/electrcity_pulse/): rebuilt daily from the deployment |
+
+## The model in production, today
+
+These charts are redrawn every evening from the Databricks deployment by
+[`model-status.yml`](.github/workflows/model-status.yml), so they show the model as it is now, not as it was at
+commit time. The [status page](https://ngin10.github.io/electrcity_pulse/) adds the monitoring results, the latest
+retraining gate and the registry.
+
+<picture>
+  <source srcset="https://ngin10.github.io/electrcity_pulse/forecast-dark.svg" media="(prefers-color-scheme: dark)">
+  <img src="https://ngin10.github.io/electrcity_pulse/forecast-light.svg" alt="Day-ahead forecast against outcome with the 80% interval, last 120 days">
+</picture>
+
+<picture>
+  <source srcset="https://ngin10.github.io/electrcity_pulse/accuracy-dark.svg" media="(prefers-color-scheme: dark)">
+  <img src="https://ngin10.github.io/electrcity_pulse/accuracy-light.svg" alt="Thirty-day rolling MAE against the monitoring warn and alert levels">
+</picture>
+
+Before the "live scoring" line, the history is the retraining job's walk-forward. Each day there was predicted by
+a model refitted monthly on earlier days only, so it is out of sample too. The two spells above the alert level
+(December 2025 and August 2026) are the turbulent weeks the [model card](docs/model_card.md) warns about.
 
 ## Architecture
 
@@ -35,6 +61,8 @@ flowchart LR
         REG[("Unity Catalog registry<br/>@champion")] --> SC
         SC --> PR[("Predictions + intervals<br/>explanations, features served")]
         PR --> MO["Monitoring<br/>accuracy, drift, freshness"]
+        FS --> RT["Monthly retraining<br/>walk-forward + gate"] --> CH[("@challenger")]
+        CH -- "human approval" --> REG
     end
     subgraph Train["Training (MLflow)"]
         T["Walk-forward experiments<br/>linear, trees, ensembles"] --> V["Validation<br/>DM tests, conformal, Kupiec"] --> REG
@@ -55,8 +83,10 @@ flowchart LR
 | **Model selection** | Diebold–Mariano tests with HAC errors, block-bootstrap confidence intervals, a 2026 holdout | [`eda/train_ensembles.py`](eda/train_ensembles.py), [validation report](docs/model_validation_report.md) |
 | **Uncertainty** | A conformal 80% interval, checked with Kupiec and Christoffersen tests | [`eda/calibrate_intervals.py`](eda/calibrate_intervals.py) |
 | **Packaging and registry** | One pyfunc (prediction + interval) with pinned dependencies, registered in Unity Catalog as `@champion` | [`eda/champion_model.py`](eda/champion_model.py), [`package_champion.py`](eda/package_champion.py) |
+| **Retraining and promotion** | Monthly job: refits the champion's own specification on the latest features, recalibrates the interval, applies a promotion gate, registers `@challenger`; a person promotes it (or rolls back), with `@previous_champion` kept | [`notebooks/train_day_ahead.py`](databricks/src/notebooks/train_day_ahead.py), [`pulse/training.py`](databricks/src/pulse/training.py), [`notebooks/promote_model.py`](databricks/src/notebooks/promote_model.py) |
 | **Serving** | Batch scoring after the cutoff. Stores the exact features served and an exact per-feature explanation of every prediction; flags days with missing weather and widens their interval | [`notebooks/score_day_ahead.py`](databricks/src/notebooks/score_day_ahead.py) |
 | **Monitoring** | Rolling accuracy and coverage; feature and prediction drift against the same season; source freshness | [`notebooks/monitor_day_ahead.py`](databricks/src/notebooks/monitor_day_ahead.py), [`pulse/monitoring.py`](databricks/src/pulse/monitoring.py) |
+| **Public status** | A daily GitHub Action reads the registry, MLflow and the monitoring tables and publishes charts, badges and a status page to GitHub Pages | [`model-status.yml`](.github/workflows/model-status.yml), [`tools/model_status.py`](databricks/tools/model_status.py) |
 | **CI/CD** | Lint, unit, Spark and model tests, combined coverage, Bandit, pip-audit, gitleaks, bundle validation; deployed with Databricks Asset Bundles | [`ci.yml`](.github/workflows/ci.yml), [`databricks/`](databricks/README.md) |
 
 ## Design decisions worth asking about
@@ -72,6 +102,10 @@ flowchart LR
   alarms in a dry run: seasons look like drift, and 30 days are too few for that threshold. Comparing against
   the same season, with thresholds from a block bootstrap, left 17 genuine shifts (solar capacity, nuclear
   outages, prices doubling), none of which hurt accuracy. So drift is recorded, and accuracy decides retraining.
+- **Retraining that can't change the design.** The monthly job clones the registered champion's specification,
+  so only the data is new. Retrained on the same data, it reproduces the validated model exactly (walk-forward
+  MAE 3.303, interval ±5.363, identical predictions). A gate, not a race against the champion, decides whether
+  it may replace it, and a person approves the swap.
 - **Honest limitations.** Interval misses come in runs, very windy days are under-predicted by about 3 points,
   and missing weather doubles the error. Each is measured and written up in the
   [validation report](docs/model_validation_report.md).
@@ -263,8 +297,7 @@ Dependabot proposes dependency and action updates weekly. `pre-commit install` r
 
 ## What I'd do next
 
-- **Train on Databricks, not a laptop.** Training runs locally with MLflow, and the champion was registered by
-  hand. Next: a monthly training job that retrains on the feature store, recalibrates the interval, registers a
-  challenger, and promotes it to `@champion` only if it passes the validation report's selection rule.
+- **Run the model search on Databricks too.** Monthly retraining runs there, but searching for a *new* design
+  (the linear, tree and ensemble suites in `eda/`) still runs locally against a local MLflow.
 - Check at startup that the consumer can write to the bucket, so a bad key fails immediately.
 - Move the consumer onto a small cloud VM or Cloud Run so ingestion runs without a laptop.
